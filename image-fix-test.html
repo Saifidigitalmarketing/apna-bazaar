@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apna Bazaar - Safe Image Fix Test</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7f5;
+            padding: 40px;
+        }
+
+        .box {
+            max-width: 700px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+        }
+
+        h1 {
+            color: #07883f;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #07883f;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #status {
+            margin-top: 20px;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="box">
+
+    <h1>3 Product Safe Image Test</h1>
+
+    <p>
+        This will update only Imli, Rai Dana and Suji.
+    </p>
+
+    <button onclick="fixImages()">
+        Update 3 Verified Images
+    </button>
+
+    <div id="status"></div>
+
+</div>
+
+<script>
+
+const SUPABASE_URL =
+"https://sdycertdcrcxuygunlgf.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_IwpL3sk7-mkC65RsO5IX0Q_yn7iMqSO";
+
+const supabaseClient =
+supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
+
+const fixedImages = [
+
+    {
+        id: 53,
+        name: "Imli",
+        image:
+        "https://upload.wikimedia.org/wikipedia/commons/0/07/Tamarind_fruit.jpg"
+    },
+
+    {
+        id: 55,
+        name: "Rai Dana",
+        image:
+        "https://upload.wikimedia.org/wikipedia/commons/e/ef/BrownMustardSeed.JPG"
+    },
+
+    {
+        id: 62,
+        name: "Suji",
+        image:
+        "https://upload.wikimedia.org/wikipedia/commons/9/9b/Semolina_Sooji_%2849684140806%29.jpg"
+    }
+
+];
+
+
+async function verifyImage(url) {
+
+    return new Promise((resolve) => {
+
+        const img = new Image();
+
+        const timer =
+        setTimeout(() => {
+            resolve(false);
+        }, 12000);
+
+        img.onload = () => {
+            clearTimeout(timer);
+
+            resolve(
+                img.naturalWidth > 100 &&
+                img.naturalHeight > 100
+            );
+        };
+
+        img.onerror = () => {
+            clearTimeout(timer);
+            resolve(false);
+        };
+
+        img.src = url;
+
+    });
+
+}
+
+
+async function fixImages() {
+
+    const status =
+    document.getElementById("status");
+
+    status.innerHTML =
+    "Checking 3 images...";
+
+    let updated = 0;
+    let failed = 0;
+
+
+    for (const product of fixedImages) {
+
+        const works =
+        await verifyImage(
+            product.image
+        );
+
+        if (!works) {
+
+            failed++;
+
+            status.innerHTML +=
+            "<br>❌ " +
+            product.name +
+            " image did not load.";
+
+            continue;
+        }
+
+
+        const { error } =
+        await supabaseClient
+            .from("products")
+            .update({
+                product_image:
+                product.image
+            })
+            .eq("id", product.id)
+            .eq(
+                "product_name",
+                product.name
+            );
+
+
+        if (error) {
+
+            failed++;
+
+            status.innerHTML +=
+            "<br>❌ " +
+            product.name +
+            " database update failed.";
+
+        } else {
+
+            updated++;
+
+            status.innerHTML +=
+            "<br>✅ " +
+            product.name +
+            " updated.";
+        }
+
+    }
+
+
+    status.innerHTML +=
+    "<br><br><b>Done</b><br>" +
+    updated +
+    " updated.<br>" +
+    failed +
+    " failed.";
+
+}
+
+</script>
+
+</body>
+</html>

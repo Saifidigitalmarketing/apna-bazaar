@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Apna Bazaar - Admin Panel</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f4f7f5;
+            color: #222;
+        }
+
+        /* HEADER */
+
+        .admin-header {
+            background: #087a3e;
+            color: white;
+            padding: 18px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-header h1 {
+            font-size: 25px;
+        }
+
+        .admin-header span {
+            font-size: 14px;
+        }
+
+        /* MAIN */
+
+        .admin-container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .welcome-box {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .welcome-box h2 {
+            color: #087a3e;
+            margin-bottom: 8px;
+        }
+
+        /* DASHBOARD CARDS */
+
+        .dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .dashboard-card h3 {
+            color: #555;
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+
+        .dashboard-card strong {
+            font-size: 30px;
+            color: #087a3e;
+        }
+
+        /* PRODUCT SECTION */
+
+        .product-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-title h2 {
+            color: #087a3e;
+        }
+
+        .add-product-btn {
+            background: #ff6500;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .add-product-btn:hover {
+            background: #e95d00;
+        }
+
+        /* FORM */
+
+        .product-form {
+            display: none;
+            background: #f8faf8;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border: 1px solid #ddd;
+        }
+
+        .product-form.active {
+            display: block;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 7px;
+            font-weight: bold;
+            color: #444;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            outline: none;
+        }
+
+        .save-product-btn {
+            width: 100%;
+            margin-top: 18px;
+            background: #087a3e;
+            color: white;
+            border: none;
+            padding: 13px 25px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .cancel-edit-btn {
+            width: 100%;
+            margin-top: 10px;
+            background: #777;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: bold;
+            display: none;
+        }
+
+        /* TABLE */
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 14px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background: #f1f5f2;
+            color: #087a3e;
+        }
+
+        .action-btn {
+            border: none;
+            padding: 7px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .edit-btn {
+            background: #ffb000;
+            color: #222;
+        }
+
+        .delete-btn {
+            background: #d93636;
+            color: white;
+        }
+
+        .empty-message {
+            text-align: center;
+            color: #777;
+            padding: 25px;
+        }
+
+        /* ORDERS */
+
+        .orders-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .orders-section h2 {
+            color: #087a3e;
+            margin-bottom: 20px;
+        }
+
+        /* MOBILE */
+
+        @media (max-width: 768px) {
+
+            .dashboard-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-header {
+                padding: 15px;
+            }
+
+            .admin-header h1 {
+                font-size: 20px;
+            }
+
+            .admin-container {
+                padding: 0 12px;
+            }
+        }
+        /* Order Details Popup */
+.order-modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.55);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.order-modal-box {
+    background: white;
+    width: 100%;
+    max-width: 600px;
+    max-height: 85vh;
+    overflow-y: auto;
+    border-radius: 16px;
+    padding: 25px;
+    box-shadow: 0 10px 35px rgba(0,0,0,0.25);
+}
+
+.order-modal-box h2  {
+    color: #087f3e;
+    margin-bottom: 20px;
+}
+
+.order-modal-close {
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.order-modal-close {
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* یہاں ہمارا نیا admin-quick-nav CSS آئے گا */
+
+/* ADMIN QUICK NAVIGATION */
+/* ===== COMPACT ADMIN TABS ===== */
+
+.admin-quick-nav {
+    position: sticky;
+    top: 10px;
+    z-index: 1000;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 6px;
+    margin: 18px 0 22px;
+
+    background: #ffffff;
+    border: 1px solid #e6ece8;
+    border-radius: 14px;
+
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+}
+
+.admin-quick-nav button {
+    flex: none;
+    min-width: 150px;
+    padding: 10px 16px;
+
+    border: 1px solid #dce5df;
+    border-radius: 10px;
+
+    background: #f7f9f8;
+    color: #333;
+
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.admin-quick-nav button:hover {
+    background: #eef5f0;
+}
+
+#productsTab.active {
+    background: #07873e;
+    color: #ffffff;
+    border-color: #07873e;
+}
+
+#ordersTab.active {
+    background: #ff6b00;
+    color: #ffffff;
+    border-color: #ff6b00;
+}
+
+@media (max-width: 600px) {
+    .admin-quick-nav {
+        width: 100%;
+        display: flex;
+    }
+
+    .admin-quick-nav button {
+        flex: 1;
+        min-width: 0;
+        padding: 9px 8px;
+        font-size: 12px;
+    }
+}
+    </style>
+
+</head>
+
+<body>
+
+    <header class="admin-header">
+        <h1>Apna Bazaar Admin</h1>
+        <span>Admin Panel</span>
+    </header>
+
+
+    <main class="admin-container">
+
+        <div class="welcome-box">
+            <h2>Dashboard</h2>
+            <p>Manage Apna Bazaar products and customer orders.</p>
+        </div>
+
+
+        <div class="dashboard-cards">
+
+            <div class="dashboard-card">
+                <h3>Total Products</h3>
+                <strong id="totalProducts">0</strong>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Total Orders</h3>
+                <strong id="totalOrders">0</strong>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Pending Orders</h3>
+                <strong id="pendingOrders">0</strong>
+            </div>
+
+        </div>
+<div class="admin-quick-nav">
+    <button type="button" id="productsTab" onclick="showAdminSection('products')">
+        📦 Products
+    </button>
+
+    <button type="button" id="ordersTab" onclick="showAdminSection('orders')">
+        🧾 Customer Orders
+    </button>
+</div>
+
+        <!-- PRODUCTS -->
+
+        <section class="product-section" id="productsSection">
+
+            <div class="section-title">
+
+                <h2>Products</h2>
+
+                <button
+                    class="add-product-btn"
+                    id="showProductForm"
+                    type="button"
+                >
+                    + Add Product
+                </button>
+
+            </div>
+
+
+            <div
+                class="product-form"
+                id="productForm"
+            >
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+                        <label>Product Name</label>
+
+                        <input
+                            type="text"
+                            id="productName"
+                            placeholder="Fresh Apples"
+                        >
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Price</label>
+
+                        <input
+                            type="number"
+                            id="productPrice"
+                            placeholder="300"
+                        >
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Unit</label>
+
+                        <input
+                            type="text"
+                            id="productUnit"
+                            placeholder="1 KG"
+                        >
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Category</label>
+
+                        <select id="productCategory">
+
+                            <option value="Grocery">
+                                Grocery
+                            </option>
+
+                            <option value="Milk & Dairy">
+                                Milk & Dairy
+                            </option>
+
+                            <option value="Vegetables">
+                                Vegetables
+                            </option>
+
+                            <option value="Fruits">
+                                Fruits
+                            </option>
+
+                            <option value="Bakery">
+                                Bakery
+                            </option>
+
+                        </select>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Product Image URL</label>
+
+                       <input
+    type="hidden"
+    id="productImage"
+>
+
+<input
+    type="file"
+    id="productImageFile"
+    accept="image/png, image/jpeg, image/webp"
+>
+
+<div
+    id="imageUploadStatus"
+    style="margin-top: 8px; font-size: 14px;"
+>
+    No image selected
+</div>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Availability</label>
+
+                        <select id="productAvailable">
+
+                            <option value="true">
+                                Available
+                            </option>
+
+                            <option value="false">
+                                Not Available
+                            </option>
+
+                        </select>
+                    </div>
+
+                </div>
+
+
+                <button
+                    class="save-product-btn"
+                    id="saveProduct"
+                    type="button"
+                >
+                    Save Product
+                </button>
+
+                <button
+                    class="cancel-edit-btn"
+                    id="cancelEdit"
+                    type="button"
+                >
+                    Cancel Edit
+                </button>
+
+            </div>
+
+
+            <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+                            <th>ID</th>
+                            <th>Product</th>
+                            <th>Price</th>
+                            <th>Unit</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="productsTableBody">
+
+                        <tr>
+                            <td
+                                colspan="7"
+                                class="empty-message"
+                            >
+                                Products will appear here.
+                            </td>
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <!-- ORDERS -->
+
+        <section class="orders-section" id="ordersSection">
+
+            <h2>Customer Orders</h2>
+
+            <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Area</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Details</th>
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="ordersTable">
+
+                        <tr>
+                            <td
+                                colspan="6"
+                                class="empty-message"
+                            >
+                                Customer orders will appear here.
+                            </td>
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+    <script>
+
+        /* =========================
+           SUPABASE CONNECTION
+        ========================= */
+
+        const SUPABASE_URL =
+            "https://sdycertdcrcxuygunlgf.supabase.co";
+
+        const SUPABASE_KEY =
+            "sb_publishable_IwpL3sk7-mkC65RsO5IX0Q_yn7iMqSO";
+
+        const supabaseClient =
+            supabase.createClient(
+                SUPABASE_URL,
+                SUPABASE_KEY
+            );
+            // ===============================
+// ADMIN PAGE SECURITY
+// ===============================
+
+const ADMIN_EMAIL = "saifyounas112@gmail.com";
+
+async function protectAdminPage() {
+
+    const {
+        data: { user },
+        error
+    } = await supabaseClient.auth.getUser();
+
+    if (
+        error ||
+        !user ||
+        !user.email ||
+        user.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()
+    ) {
+       window.location.replace("admin-login.html");
+    }
+
+    console.log("Admin verified:", user.email);
+}
+
+protectAdminPage();
+// ==============================
+// PRODUCT IMAGE UPLOAD
+// ==============================
+
+const productImageFile =
+    document.getElementById("productImageFile");
+
+const imageUploadStatus =
+    document.getElementById("imageUploadStatus");
+
+const productImageInput =
+    document.getElementById("productImage");
+
+
+productImageFile.addEventListener(
+    "change",
+    async function () {
+
+        const file = this.files[0];
+
+        if (!file) {
+            imageUploadStatus.textContent =
+                "No image selected";
+            return;
+        }
+
+        imageUploadStatus.textContent =
+            "Uploading image...";
+
+        try {
+
+            const safeFileName =
+                Date.now() +
+                "-" +
+                file.name
+                    .toLowerCase()
+                    .replace(/\s+/g, "-");
+
+            const filePath =
+                "products/" + safeFileName;
+
+
+            const { error: uploadError } =
+                await supabaseClient
+                    .storage
+                    .from("product-images")
+                    .upload(
+                        filePath,
+                        file,
+                        {
+                            cacheControl: "3600",
+                            upsert: false
+                        }
+                    );
+
+
+            if (uploadError) {
+                throw uploadError;
+            }
+
+
+            const { data } =
+                supabaseClient
+                    .storage
+                    .from("product-images")
+                    .getPublicUrl(filePath);
+
+
+            productImageInput.value =
+                data.publicUrl;
+
+
+            imageUploadStatus.textContent =
+                "✅ Image uploaded successfully";
+
+            console.log(
+                "Image URL:",
+                data.publicUrl
+            );
+
+        } catch (error) {
+
+            console.error(error);
+
+            imageUploadStatus.textContent =
+                "❌ Image upload failed";
+
+        }
+
+    }
+);
+
+        /* =========================
+           ELEMENTS
+        ========================= */
+
+        const showProductForm =
+            document.getElementById("showProductForm");
+
+        const productForm =
+            document.getElementById("productForm");
+
+        const saveProductButton =
+            document.getElementById("saveProduct");
+
+        const cancelEditButton =
+            document.getElementById("cancelEdit");
+
+        const productsTableBody =
+            document.getElementById("productsTableBody");
+
+
+        /* =========================
+           EDIT MODE
+        ========================= */
+
+        let editingProductId = null;
+
+
+        /* =========================
+           RESET PRODUCT FORM
+        ========================= */
+
+        function resetProductForm() {
+
+            editingProductId = null;
+
+            document.getElementById("productName").value = "";
+            document.getElementById("productPrice").value = "";
+            document.getElementById("productUnit").value = "";
+            document.getElementById("productCategory").value = "Grocery";
+            document.getElementById("productImage").value = "";
+            document.getElementById("productAvailable").value = "true";
+
+            saveProductButton.textContent = "Save Product";
+
+            cancelEditButton.style.display = "none";
+        }
+
+
+        /* =========================
+           ADD PRODUCT BUTTON
+        ========================= */
+
+        showProductForm.addEventListener(
+            "click",
+            function () {
+
+                resetProductForm();
+
+                productForm.classList.add("active");
+
+                productForm.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start"
+                });
+
+                document
+                    .getElementById("productName")
+                    .focus();
+            }
+        );
+
+
+        /* =========================
+           CANCEL EDIT
+        ========================= */
+
+        cancelEditButton.addEventListener(
+            "click",
+            function () {
+
+                resetProductForm();
+
+                productForm.classList.remove("active");
+            }
+        );
+
+
+        /* =========================
+           LOAD PRODUCTS
+        ========================= */
+
+        async function loadProducts() {
+
+            const { data, error } =
+                await supabaseClient
+                    .from("products")
+                    .select("*")
+                    .order(
+                        "id",
+                        { ascending: true }
+                    );
+
+
+            if (error) {
+
+                console.error(
+                    "Products load error:",
+                    error
+                );
+
+                alert(
+                    "Products load نہیں ہو سکے۔"
+                );
+
+                return;
+            }
+
+
+            document
+                .getElementById("totalProducts")
+                .textContent = data.length;
+
+
+            productsTableBody.innerHTML = "";
+
+
+            if (data.length === 0) {
+
+                productsTableBody.innerHTML = `
+                    <tr>
+                        <td
+                            colspan="7"
+                            class="empty-message"
+                        >
+                            No products found.
+                        </td>
+                    </tr>
+                `;
+
+                return;
+            }
+
+
+            data.forEach(function (product) {
+
+                const row =
+                    document.createElement("tr");
+
+
+                row.innerHTML = `
+
+                    <td>
+                        ${product.id}
+                    </td>
+
+                    <td>
+                        ${product.product_name || ""}
+                    </td>
+
+                    <td>
+                        Rs. ${product.product_price || 0}
+                    </td>
+
+                    <td>
+                        ${product.product_unit || ""}
+                    </td>
+
+                    <td>
+                        ${product.product_category || ""}
+                    </td>
+
+                    <td>
+                        ${
+                            product.is_available
+                                ? "Available"
+                                : "Unavailable"
+                        }
+                    </td>
+
+                    <td>
+
+                        <button
+                            class="action-btn edit-btn"
+                            onclick="editProduct(${product.id})"
+                        >
+                            Edit
+                        </button>
+
+                        <button
+                            class="action-btn delete-btn"
+                            onclick="deleteProduct(${product.id})"
+                        >
+                            Delete
+                        </button>
+
+                    </td>
+                `;
+
+
+                productsTableBody
+                    .appendChild(row);
+            });
+        }
+
+
+        /* =========================
+           SAVE / UPDATE PRODUCT
+        ========================= */
+
+        saveProductButton.addEventListener(
+            "click",
+            async function () {
+
+                const productName =
+                    document
+                        .getElementById("productName")
+                        .value
+                        .trim();
+
+                const productPrice =
+                    Number(
+                        document
+                            .getElementById("productPrice")
+                            .value
+                    );
+
+                const productUnit =
+                    document
+                        .getElementById("productUnit")
+                        .value
+                        .trim();
+
+                const productCategory =
+                    document
+                        .getElementById("productCategory")
+                        .value;
+
+                const productImage =
+                    document
+                        .getElementById("productImage")
+                        .value
+                        .trim();
+
+                const productAvailability =
+                    document
+                        .getElementById("productAvailable")
+                        .value;
+
+
+                if (
+                    !productName ||
+                    !productPrice ||
+                    !productUnit
+                ) {
+
+                    alert(
+                        "Please fill Product Name, Price and Unit."
+                    );
+
+                    return;
+                }
+
+
+                const productData = {
+
+                    product_name:
+                        productName,
+
+                    product_price:
+                        productPrice,
+
+                    product_unit:
+                        productUnit,
+
+                    product_category:
+                        productCategory,
+
+                    product_image:
+                        productImage || null,
+
+                    is_available:
+                        productAvailability === "true"
+                };
+
+
+                /* EDIT / UPDATE */
+
+                if (editingProductId !== null) {
+
+                    const { error } =
+                        await supabaseClient
+                            .from("products")
+                            .update(productData)
+                            .eq(
+                                "id",
+                                editingProductId
+                            );
+
+
+                    if (error) {
+
+                        console.error(
+                            "Product update error:",
+                            error
+                        );
+
+                        alert(
+                            "Product update نہیں ہوا۔"
+                        );
+
+                        return;
+                    }
+
+
+                    alert(
+                        "Product successfully update ہو گیا!"
+                    );
+                }
+
+
+                /* NEW PRODUCT */
+
+                else {
+
+                    const { error } =
+                        await supabaseClient
+                            .from("products")
+                            .insert([
+                                productData
+                            ]);
+
+
+                    if (error) {
+
+                        console.error(
+                            "Product save error:",
+                            error
+                        );
+
+                        alert(
+                            "Product save نہیں ہوا۔"
+                        );
+
+                        return;
+                    }
+
+
+                    alert(
+                        "Product successfully save ہو گیا!"
+                    );
+                }
+
+
+                resetProductForm();
+
+                productForm
+                    .classList
+                    .remove("active");
+
+                await loadProducts();
+            }
+        );
+
+
+        /* =========================
+           EDIT PRODUCT
+        ========================= */
+
+        async function editProduct(id) {
+
+            const { data, error } =
+                await supabaseClient
+                    .from("products")
+                    .select("*")
+                    .eq(
+                        "id",
+                        id
+                    )
+                    .single();
+
+
+            if (error) {
+
+                console.error(
+                    "Edit product error:",
+                    error
+                );
+
+                alert(
+                    "Product load نہیں ہو سکا۔"
+                );
+
+                return;
+            }
+
+
+            editingProductId = id;
+
+
+            document
+                .getElementById("productName")
+                .value =
+                data.product_name || "";
+
+
+            document
+                .getElementById("productPrice")
+                .value =
+                data.product_price || "";
+
+
+            document
+                .getElementById("productUnit")
+                .value =
+                data.product_unit || "";
+
+
+            document
+                .getElementById("productCategory")
+                .value =
+                data.product_category || "Grocery";
+
+
+            document
+                .getElementById("productImage")
+                .value =
+                data.product_image || "";
+
+
+            document
+                .getElementById("productAvailable")
+                .value =
+                data.is_available
+                    ? "true"
+                    : "false";
+
+
+            productForm
+                .classList
+                .add("active");
+
+
+            saveProductButton
+                .textContent =
+                "Update Product";
+
+
+            cancelEditButton
+                .style
+                .display =
+                "block";
+
+
+            productForm.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+
+
+            document
+                .getElementById("productName")
+                .focus();
+        }
+
+
+        /* =========================
+           DELETE PRODUCT
+        ========================= */
+
+        async function deleteProduct(id) {
+
+            const confirmDelete =
+                confirm(
+                    "کیا آپ واقعی یہ product delete کرنا چاہتے ہیں؟"
+                );
+
+
+            if (!confirmDelete) {
+                return;
+            }
+
+
+            const { error } =
+                await supabaseClient
+                    .from("products")
+                    .delete()
+                    .eq(
+                        "id",
+                        id
+                    );
+
+
+            if (error) {
+
+                console.error(
+                    "Delete product error:",
+                    error
+                );
+
+                alert(
+                    "Product delete نہیں ہوا۔"
+                );
+
+                return;
+            }
+
+
+            if (editingProductId === id) {
+
+                resetProductForm();
+
+                productForm
+                    .classList
+                    .remove("active");
+            }
+
+
+            alert(
+                "Product delete ہو گیا!"
+            );
+
+
+            await loadProducts();
+        }
+
+
+        /* =========================
+           START
+        ========================= */
+async function loadOrders() {
+    const { data, error } = await supabaseClient
+        .from("orders")
+        .select("*")
+        .order("id", { ascending: false });
+
+    if (error) {
+        console.error("Orders load error:", error);
+        return;
+    }
+
+    const totalOrders = document.getElementById("totalOrders");
+    const pendingOrders = document.getElementById("pendingOrders");
+    const ordersTable = document.getElementById("ordersTable");
+
+    if (totalOrders) {
+        totalOrders.textContent = data.length;
+    }
+
+    if (pendingOrders) {
+        const pendingCount = data.filter(order =>
+            (order.order_status || "").toLowerCase() === "pending"
+        ).length;
+
+        pendingOrders.textContent = pendingCount;
+    }
+
+    if (!ordersTable) {
+        console.error("ordersTable not found");
+        return;
+    }
+
+    ordersTable.innerHTML = "";
+
+    if (data.length === 0) {
+        ordersTable.innerHTML = `
+            <tr>
+                <td colspan="5" class="empty-message">
+                    No customer orders found.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    data.forEach(order => {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>${order.id}</td>
+            <td>${order.customer_name || ""}</td>
+            <td>${order.customer_area || ""}</td>
+            <td>Rs. ${order.grand_total || 0}</td>
+           <td>
+    ${
+    (order.order_status || "Pending") === "Pending"
+    ? `
+        <button onclick="updateOrderStatus(${order.id}, 'Accepted')">
+            Accept
+        </button>
+
+        <button onclick="updateOrderStatus(${order.id}, 'Rejected')">
+            Reject
+        </button>
+      `
+
+    : order.order_status === "Accepted"
+    ? `
+        <button onclick="updateOrderStatus(${order.id}, 'Preparing')">
+            Preparing
+        </button>
+      `
+
+    : order.order_status === "Preparing"
+    ? `
+        <button onclick="updateOrderStatus(${order.id}, 'Out for Delivery')">
+            Out for Delivery
+        </button>
+      `
+
+    : order.order_status === "Out for Delivery"
+    ? `
+        <button onclick="updateOrderStatus(${order.id}, 'Delivered')">
+            Delivered
+        </button>
+      `
+
+    : `<strong>${order.order_status}</strong>`
+}
+         
+    
+</td>
+<td><button onclick="viewOrderDetails(${order.id})">View Details</button></td>
+        `;
+
+        ordersTable.appendChild(row);
+    });
+}
+async function updateOrderStatus(orderId, newStatus) {
+
+    const { error } = await supabaseClient
+        .from("orders")
+        .update({
+            order_status: newStatus
+        })
+        .eq("id", orderId);
+
+    if (error) {
+        console.error("Order status update failed:", error);
+        alert("Order status update failed.");
+        return;
+    }
+
+    alert("Order status updated successfully ✅");
+
+    loadOrders();
+}
+        loadProducts();
+        async function viewOrderDetails(id) {
+    const { data, error } = await supabaseClient
+        .from("orders")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+    if (error) {
+        console.error("Order details error:", error);
+        alert("Order details load نہیں ہو سکیں۔");
+        return;
+    }
+
+    let itemsText = "No items";
+
+    if (Array.isArray(data.items) && data.items.length > 0) {
+        itemsText = data.items
+            .map(item => {
+                return `${item.name || "Product"} x ${item.quantity || 1} - Rs. ${item.price || 0}`;
+            })
+            .join("\n");
+    }
+
+   const modal = document.getElementById("orderDetailsModal");
+const content = document.getElementById("orderDetailsContent");
+
+content.innerHTML = `
+    <p><strong>Order ID:</strong> ${data.id}</p>
+    <p><strong>Customer:</strong> ${data.customer_name || ""}</p>
+    <p><strong>Phone:</strong> ${data.customer_phone || ""}</p>
+    <p><strong>Area:</strong> ${data.customer_area || ""}</p>
+    <p><strong>Address:</strong> ${data.customer_address || ""}</p>
+
+    <hr style="margin:15px 0;">
+
+    <p><strong>Distance:</strong> ${Number(data.distance_km || 0).toFixed(2)} KM</p>
+    <p><strong>Subtotal:</strong> Rs. ${data.subtotal || 0}</p>
+    <p><strong>Delivery Charges:</strong> Rs. ${data.delivery_charge || 0}</p>
+    <p><strong>Grand Total:</strong> Rs. ${data.grand_total || 0}</p>
+
+    <hr style="margin:15px 0;">
+
+    <p><strong>Payment Method:</strong> ${data.payment_method || ""}</p>
+    <p><strong>Status:</strong> ${data.order_status || "Pending"}</p>
+
+    <hr style="margin:15px 0;">
+
+    <p><strong>Items:</strong></p>
+    <pre style="white-space:pre-wrap;">${itemsText}</pre>
+`;
+
+modal.style.display = "flex";
+}
+loadOrders();
+function closeOrderDetails() {
+    document.getElementById("orderDetailsModal").style.display = "none";
+}
+function showAdminSection(section) {
+    const productsSection = document.getElementById("productsSection");
+    const ordersSection = document.getElementById("ordersSection");
+    const productsTab = document.getElementById("productsTab");
+    const ordersTab = document.getElementById("ordersTab");
+
+    if (section === "products") {
+        productsSection.style.display = "block";
+        ordersSection.style.display = "none";
+
+        productsTab.classList.add("active");
+        ordersTab.classList.remove("active");
+    } else {
+        productsSection.style.display = "none";
+        ordersSection.style.display = "block";
+
+        ordersTab.classList.add("active");
+        productsTab.classList.remove("active");
+    }
+}
+
+// Default open Products
+showAdminSection("products");
+    </script>
+<!-- ORDER DETAILS POPUP -->
+<div id="orderDetailsModal" class="order-modal">
+    <div class="order-modal-box">
+        <button class="order-modal-close" onclick="closeOrderDetails()">×</button>
+
+        <h2>Order Details</h2>
+
+        <div id="orderDetailsContent">
+            <!-- Order details یہاں آئیں گی -->
+        </div>
+    </div>
+</div>
+</body>
+
+</html>

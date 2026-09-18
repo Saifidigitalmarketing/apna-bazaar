@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apna Bazaar - Real Images</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7f5;
+            padding: 40px;
+        }
+
+        .box {
+            max-width: 750px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+        }
+
+        h1 {
+            color: #07883f;
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            background: #07883f;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #status {
+            margin-top: 20px;
+            line-height: 1.8;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="box">
+
+    <h1>Apna Bazaar Real Product Images</h1>
+
+    <p>
+        This will automatically find and verify real
+        product images before saving them.
+    </p>
+
+    <button id="startButton" onclick="startImageUpdate()">
+        Add Verified Real Images
+    </button>
+
+    <div id="status"></div>
+
+</div>
+
+
+<script>
+
+const SUPABASE_URL =
+"https://sdycertdcrcxuygunlgf.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_IwpL3sk7-mkC65RsO5IX0Q_yn7iMqSO";
+
+const supabaseClient =
+supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
+
+
+// Pakistani/local names ko better English search mein convert karega
+const searchAliases = {
+
+    "Gajar": "carrots",
+    "Kheera": "cucumber",
+    "Dahi": "yogurt",
+    "Aloo": "potatoes",
+    "Pyaz": "onions",
+    "Tamatar": "tomatoes",
+    "Gobhi": "cauliflower",
+    "Bhindi": "okra",
+    "Matar": "green peas",
+    "Palak": "spinach",
+    "Baingan": "eggplant",
+    "Adrak": "ginger",
+    "Lehsan": "garlic",
+    "Shimla Mirch": "bell pepper",
+    "Seviyan": "vermicelli",
+    "Tea Whitener": "coffee creamer powder",
+    "Nimco Mix": "savory snack mix",
+    "Qorma Masala": "korma spice",
+    "Karahi Masala": "karahi spice",
+    "Tikka Masala": "tikka spice",
+    "Chicken Masala": "chicken spice mix",
+    "Fish Masala": "fish spice mix"
+
+};
+
+
+function getSearchName(name) {
+
+    if (searchAliases[name]) {
+        return searchAliases[name];
+    }
+
+    return name
+        .replace(/^Fresh\s+/i, "")
+        .replace(/\s+Pack$/i, "")
+        .replace(/\s+Set$/i, "")
+        .trim();
+}
+
+
+// Check karega image asal mein load hoti hai ya nahi
+function verifyImage(url) {
+
+    return new Promise((resolve) => {
+
+        const img = new Image();
+
+        const timer = setTimeout(() => {
+            resolve(false);
+        }, 12000);
+
+        img.onload = () => {
+            clearTimeout(timer);
+            resolve(
+                img.naturalWidth > 100 &&
+                img.naturalHeight > 100
+            );
+        };
+
+        img.onerror = () => {
+            clearTimeout(timer);
+            resolve(false);
+        };
+
+        img.src = url;
+
+    });
+
+}
+
+
+// Wikimedia se DIRECT upload.wikimedia.org image nikalega
+async function findVerifiedImage(productName) {
+
+    const searchName =
+        getSearchName(productName);
+
+    const searchQuery =
+        encodeURIComponent(searchName);
+
+    const apiURL =
+        "https://commons.wikimedia.org/w/api.php" +
+        "?action=query" +
+        "&generator=search" +
+        "&gsrsearch=" + searchQuery +
+        "&gsrnamespace=6" +
+        "&gsrlimit=8" +
+        "&prop=imageinfo" +
+        "&iiprop=url|mime" +
+        "&format=json" +
+        "&origin=*";
+
+
+    try {
+
+        const response =
+            await fetch(apiURL);
+
+        if (!response.ok) {
+            return null;
+        }
+
+        const data =
+            await response.json();
+
+        if (
+            !data.query ||
+            !data.query.pages
+        ) {
+            return null;
+        }
+
+
+        const pages =
+            Object.values(
+                data.query.pages
+            );
+
+
+        for (const page of pages) {
+
+            const info =
+                page.imageinfo?.[0];
+
+            if (!info) continue;
+
+            if (
+                !info.mime ||
+                !info.mime.startsWith("image/")
+            ) {
+                continue;
+            }
+
+            const url =
+                info.url;
+
+            // Sirf direct Wikimedia image
+            if (
+                !url ||
+                !url.startsWith(
+                    "https://upload.wikimedia.org/"
+                )
+            ) {
+                continue;
+            }
+
+
+            const works =
+                await verifyImage(url);
+
+            if (works) {
+                return url;
+            }
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            productName,
+            error
+        );
+
+    }
+
+
+    return null;
+}
+
+
+function needsNewImage(url) {
+
+    if (!url) {
+        return true;
+    }
+
+    // Purana placeholder
+    if (
+        url.startsWith(
+            "data:image/svg+xml"
+        )
+    ) {
+        return true;
+    }
+
+    // Jo broken redirect links humne test mein lagaye the
+    if (
+        url.includes(
+            "commons.wikimedia.org/wiki/Special:Redirect"
+        )
+    ) {
+        return true;
+    }
+
+    return false;
+}
+
+
+function wait(ms) {
+
+    return new Promise(
+        resolve =>
+            setTimeout(resolve, ms)
+    );
+
+}
+
+
+async function startImageUpdate() {
+
+    const status =
+        document.getElementById(
+            "status"
+        );
+
+    const button =
+        document.getElementById(
+            "startButton"
+        );
+
+    button.disabled = true;
+
+    status.textContent =
+        "Products loading...";
+
+
+    const {
+        data: products,
+        error
+    } =
+    await supabaseClient
+        .from("products")
+        .select(
+            "id, product_name, product_image"
+        )
+        .order(
+            "id",
+            { ascending: true }
+        );
+
+
+    if (error) {
+
+        status.textContent =
+            "Products load nahi huay ❌";
+
+        console.error(error);
+
+        button.disabled = false;
+
+        return;
+    }
+
+
+    const productsToFix =
+        products.filter(
+            product =>
+                needsNewImage(
+                    product.product_image
+                )
+        );
+
+
+    let updated = 0;
+    let skipped = 0;
+    let failed = 0;
+
+
+    for (
+        let i = 0;
+        i < productsToFix.length;
+        i++
+    ) {
+
+        const product =
+            productsToFix[i];
+
+
+        status.textContent =
+            `Working on ${i + 1} / ${productsToFix.length}\n\n` +
+            `Current: ${product.product_name}\n\n` +
+            `Updated: ${updated}\n` +
+            `No image found: ${failed}`;
+
+
+        const imageURL =
+            await findVerifiedImage(
+                product.product_name
+            );
+
+
+        if (!imageURL) {
+
+            failed++;
+
+            await wait(150);
+
+            continue;
+        }
+
+
+        const { error: updateError } =
+        await supabaseClient
+            .from("products")
+            .update({
+                product_image:
+                    imageURL
+            })
+            .eq(
+                "id",
+                product.id
+            );
+
+
+        if (updateError) {
+
+            failed++;
+
+            console.error(
+                product.product_name,
+                updateError
+            );
+
+        } else {
+
+            updated++;
+
+        }
+
+
+        // Wikimedia ko bohat tez requests nahi bhejni
+        await wait(200);
+
+    }
+
+
+    skipped =
+        products.length -
+        productsToFix.length;
+
+
+    status.textContent =
+        "DONE ✅\n\n" +
+        "Total Products: " +
+        products.length +
+        "\n\nVerified real images added: " +
+        updated +
+        "\nExisting real images kept: " +
+        skipped +
+        "\nNo verified image found: " +
+        failed +
+        "\n\nCustomer website ko Ctrl + Shift + R se refresh karein.";
+
+
+    button.disabled = false;
+
+}
+
+</script>
+
+</body>
+</html>

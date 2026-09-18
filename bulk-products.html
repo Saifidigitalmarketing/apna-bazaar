@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apna Bazaar - Bulk Products</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7f5;
+            padding: 30px;
+        }
+
+        .box {
+            max-width: 700px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+
+        h1 {
+            color: #07833d;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            background: #07833d;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #05682f;
+        }
+
+        #status {
+            margin-top: 20px;
+            line-height: 1.7;
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="box">
+    <h1>Apna Bazaar Bulk Products</h1>
+
+    <p>
+        Button ko sirf aik dafa click karein.
+        Jo products pehle database mein hain woh dobara add nahi hon ge.
+    </p>
+
+    <button onclick="addBulkProducts()">
+        Add All Products
+    </button>
+
+    <div id="status"></div>
+</div>
+
+
+<script>
+
+const SUPABASE_URL =
+"https://sdycertdcrcxuygunlgf.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_IwpL3sk7-mkC65RsO5IX0Q_yn7iMqSO";
+
+const supabaseClient =
+supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
+
+
+/* ==============================
+   NEW PRODUCTS LIST
+============================== */
+
+const newProducts = [
+
+    { product_name: "Green Tea", product_price: 350, product_unit: "Pack", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Coffee", product_price: 550, product_unit: "200 Gram", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Milk Powder", product_price: 650, product_unit: "500 Gram", product_category: "Milk & Dairy", product_image: "", is_available: true },
+    { product_name: "Tea Whitener", product_price: 480, product_unit: "500 Gram", product_category: "Milk & Dairy", product_image: "", is_available: true },
+
+    { product_name: "Instant Noodles", product_price: 120, product_unit: "Pack", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Macaroni", product_price: 200, product_unit: "500 Gram", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Spaghetti", product_price: 220, product_unit: "500 Gram", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Seviyan", product_price: 180, product_unit: "500 Gram", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Custard Powder", product_price: 180, product_unit: "300 Gram", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Jelly Powder", product_price: 130, product_unit: "Pack", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Cocoa Powder", product_price: 350, product_unit: "200 Gram", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Vanilla Essence", product_price: 160, product_unit: "50 ML", product_category: "Grocery", product_image: "", is_available: true },
+
+    { product_name: "Chaat Masala", product_price: 180, product_unit: "100 Gram", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Biryani Masala", product_price: 180, product_unit: "100 Gram", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Qorma Masala", product_price: 180, product_unit: "100 Gram", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Karahi Masala", product_price: 180, product_unit: "100 Gram", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Tikka Masala", product_price: 180, product_unit: "100 Gram", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Chicken Masala", product_price: 180, product_unit: "100 Gram", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Fish Masala", product_price: 180, product_unit: "100 Gram", product_category: "Grocery", product_image: "", is_available: true },
+
+    { product_name: "Potato Chips", product_price: 100, product_unit: "Pack", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Nimco Mix", product_price: 180, product_unit: "250 Gram", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Salted Peanuts", product_price: 180, product_unit: "250 Gram", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Popcorn", product_price: 150, product_unit: "Pack", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Chocolate Bar", product_price: 150, product_unit: "Piece", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Wafer Biscuit", product_price: 100, product_unit: "Pack", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Toffee Pack", product_price: 150, product_unit: "Pack", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Chewing Gum Pack", product_price: 120, product_unit: "Pack", product_category: "Grocery", product_image: "", is_available: true },
+
+    { product_name: "Mineral Water 1.5 Litre", product_price: 120, product_unit: "Bottle", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Mineral Water 500 ML", product_price: 70, product_unit: "Bottle", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Cola Drink 1.5 Litre", product_price: 220, product_unit: "Bottle", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Lemon Drink 1.5 Litre", product_price: 220, product_unit: "Bottle", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Orange Drink 1.5 Litre", product_price: 220, product_unit: "Bottle", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Mango Juice", product_price: 300, product_unit: "1 Litre", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Apple Juice", product_price: 320, product_unit: "1 Litre", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Orange Juice", product_price: 320, product_unit: "1 Litre", product_category: "Grocery", product_image: "", is_available: true },
+
+    { product_name: "Dish Wash Liquid", product_price: 300, product_unit: "500 ML", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Washing Powder", product_price: 450, product_unit: "1KG", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Laundry Soap", product_price: 120, product_unit: "Piece", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Floor Cleaner", product_price: 350, product_unit: "1 Litre", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Toilet Cleaner", product_price: 300, product_unit: "500 ML", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Glass Cleaner", product_price: 300, product_unit: "500 ML", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Bleach", product_price: 250, product_unit: "1 Litre", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Hand Wash", product_price: 300, product_unit: "500 ML", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Tissue Roll", product_price: 180, product_unit: "Pack", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Kitchen Roll", product_price: 220, product_unit: "Pack", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Garbage Bags", product_price: 250, product_unit: "Pack", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Scrub Sponge", product_price: 100, product_unit: "Pack", product_category: "Grocery", product_image: "", is_available: true },
+
+    { product_name: "Bath Soap", product_price: 180, product_unit: "Piece", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Shampoo", product_price: 450, product_unit: "400 ML", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Hair Oil", product_price: 350, product_unit: "200 ML", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Toothpaste", product_price: 250, product_unit: "Pack", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Toothbrush", product_price: 150, product_unit: "Piece", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Face Wash", product_price: 400, product_unit: "100 ML", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Body Lotion", product_price: 450, product_unit: "250 ML", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Petroleum Jelly", product_price: 280, product_unit: "100 Gram", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Talcum Powder", product_price: 300, product_unit: "200 Gram", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Sanitary Pads", product_price: 350, product_unit: "Pack", product_category: "Grocery", product_image: "", is_available: true },
+
+    { product_name: "Baby Diapers Small", product_price: 900, product_unit: "Pack", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Baby Diapers Medium", product_price: 950, product_unit: "Pack", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Baby Diapers Large", product_price: 1000, product_unit: "Pack", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Baby Wipes", product_price: 300, product_unit: "Pack", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Baby Lotion", product_price: 450, product_unit: "200 ML", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Baby Shampoo", product_price: 450, product_unit: "200 ML", product_category: "Grocery", product_image: "", is_available: true },
+
+    { product_name: "Frozen Peas", product_price: 350, product_unit: "500 Gram", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Frozen Paratha", product_price: 450, product_unit: "Pack", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Frozen Samosa", product_price: 400, product_unit: "Pack", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "French Fries", product_price: 500, product_unit: "1KG", product_category: "Grocery", product_image: "", is_available: true },
+    { product_name: "Chicken Nuggets", product_price: 650, product_unit: "500 Gram", product_category: "Meat", product_image: "", is_available: true },
+
+    { product_name: "Chicken Whole", product_price: 750, product_unit: "1KG", product_category: "Meat", product_image: "", is_available: true },
+    { product_name: "Chicken Breast", product_price: 900, product_unit: "1KG", product_category: "Meat", product_image: "", is_available: true },
+    { product_name: "Chicken Boneless", product_price: 1050, product_unit: "1KG", product_category: "Meat", product_image: "", is_available: true },
+    { product_name: "Beef Boneless", product_price: 1200, product_unit: "1KG", product_category: "Meat", product_image: "", is_available: true },
+    { product_name: "Beef Mince", product_price: 1100, product_unit: "1KG", product_category: "Meat", product_image: "", is_available: true },
+    { product_name: "Mutton Mix", product_price: 2200, product_unit: "1KG", product_category: "Meat", product_image: "", is_available: true },
+    { product_name: "Fresh Fish", product_price: 1000, product_unit: "1KG", product_category: "Meat", product_image: "", is_available: true },
+
+    { product_name: "Tea Cups Set", product_price: 1200, product_unit: "Set", product_category: "Crockery", product_image: "", is_available: true },
+    { product_name: "Drinking Glass Set", product_price: 900, product_unit: "Set", product_category: "Crockery", product_image: "", is_available: true },
+    { product_name: "Dinner Plates Set", product_price: 1500, product_unit: "Set", product_category: "Crockery", product_image: "", is_available: true },
+    { product_name: "Bowls Set", product_price: 900, product_unit: "Set", product_category: "Crockery", product_image: "", is_available: true },
+    { product_name: "Spoons Set", product_price: 500, product_unit: "Set", product_category: "Crockery", product_image: "", is_available: true },
+    { product_name: "Plastic Jug", product_price: 450, product_unit: "Piece", product_category: "Crockery", product_image: "", is_available: true },
+    { product_name: "Water Bottle", product_price: 350, product_unit: "Piece", product_category: "Crockery", product_image: "", is_available: true },
+    { product_name: "Lunch Box", product_price: 500, product_unit: "Piece", product_category: "Crockery", product_image: "", is_available: true },
+    { product_name: "Storage Box", product_price: 550, product_unit: "Piece", product_category: "Crockery", product_image: "", is_available: true }
+
+];
+
+
+/* ==============================
+   BULK INSERT FUNCTION
+============================== */
+
+async function addBulkProducts() {
+
+    const status =
+        document.getElementById("status");
+
+    status.innerHTML =
+        "Checking existing products...";
+
+
+    const {
+        data: existingProducts,
+        error: readError
+    } =
+    await supabaseClient
+        .from("products")
+        .select("product_name");
+
+
+    if (readError) {
+
+        status.innerHTML =
+            "Error reading products: "
+            + readError.message;
+
+        return;
+    }
+
+
+    const existingNames =
+        new Set(
+            (existingProducts || [])
+            .map(product =>
+                product.product_name
+                    .trim()
+                    .toLowerCase()
+            )
+        );
+
+
+    const productsToInsert =
+        newProducts.filter(product =>
+            !existingNames.has(
+                product.product_name
+                    .trim()
+                    .toLowerCase()
+            )
+        );
+
+
+    if (productsToInsert.length === 0) {
+
+        status.innerHTML =
+            "All products already exist. Nothing new was added.";
+
+        return;
+    }
+
+
+    status.innerHTML =
+        "Adding "
+        + productsToInsert.length
+        + " new products...";
+
+
+    const {
+        data,
+        error
+    } =
+    await supabaseClient
+        .from("products")
+        .insert(productsToInsert)
+        .select();
+
+
+    if (error) {
+
+        status.innerHTML =
+            "Error: "
+            + error.message;
+
+        return;
+    }
+
+
+    const skipped =
+        newProducts.length
+        - productsToInsert.length;
+
+
+    status.innerHTML =
+        "<b>Done ✅</b><br><br>"
+        + productsToInsert.length
+        + " new products added.<br>"
+        + skipped
+        + " duplicate products skipped.<br><br>"
+        + "Now open Admin Panel and refresh it.";
+}
+
+</script>
+
+</body>
+</html>
