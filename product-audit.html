@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apna Bazaar - Product Audit</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+body{font-family:Arial,sans-serif;background:#f4f7f5;color:#222;margin:0;padding:24px}.wrap{max-width:1200px;margin:auto}.card{background:#fff;border-radius:14px;padding:20px;box-shadow:0 4px 18px rgba(0,0,0,.08);margin-bottom:18px}h1{color:#087a3e;margin-top:0}.actions{display:flex;gap:10px;flex-wrap:wrap}.btn{border:0;border-radius:8px;padding:12px 16px;font-weight:700;cursor:pointer;background:#087a3e;color:#fff}.btn.orange{background:#ff6500}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.stat{background:#fff;padding:16px;border-radius:12px;box-shadow:0 3px 12px rgba(0,0,0,.06)}.stat strong{display:block;font-size:26px;color:#087a3e}.table{overflow:auto;background:#fff;border-radius:12px}table{width:100%;border-collapse:collapse;min-width:900px}th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;font-size:14px}th{background:#eef5f0;color:#087a3e;position:sticky;top:0}.bad{color:#b42318;font-weight:700}.ok{color:#087a3e;font-weight:700}input{width:100%;padding:7px;box-sizing:border-box}#status{white-space:pre-line;margin-top:12px}@media(max-width:700px){.stats{grid-template-columns:1fr 1fr}body{padding:12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="card">
+<h1>Apna Bazaar Product Audit</h1>
+<p>Safe audit tool: products ko Supabase se read karta hai. Changes sirf tab save hoti hain jab aap row ka Save button press karein.</p>
+<div class="actions"><button class="btn" onclick="loadProducts()">Load All Products</button><button class="btn orange" onclick="downloadCSV()">Download Audit CSV</button></div>
+<div id="status">Ready.</div>
+</div>
+<div class="stats"><div class="stat"><span>Total</span><strong id="total">0</strong></div><div class="stat"><span>Missing Image</span><strong id="missing">0</strong></div><div class="stat"><span>Placeholder/Broken</span><strong id="broken">0</strong></div><div class="stat"><span>Loaded</span><strong id="loaded">0</strong></div></div>
+<br>
+<div class="table"><table><thead><tr><th>ID</th><th>Product Name (Roman English)</th><th>Price</th><th>Unit</th><th>Category</th><th>Image Status</th><th>Image URL</th><th>Action</th></tr></thead><tbody id="rows"></tbody></table></div>
+</div>
+<script>
+const SUPABASE_URL="https://sdycertdcrcxuygunlgf.supabase.co";
+const SUPABASE_KEY="sb_publishable_IwpL3sk7-mkC65RsO5IX0Q_yn7iMqSO";
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let products=[];
+function imageStatus(url){if(!url)return 'Missing';if(url.startsWith('data:image/svg+xml'))return 'Placeholder';if(url.includes('Special:Redirect'))return 'Broken redirect';return 'Present';}
+async function loadProducts(){document.getElementById('status').textContent='Loading products...';const {data,error}=await db.from('products').select('id,product_name,product_price,product_unit,product_category,product_image,is_available').order('id',{ascending:true});if(error){document.getElementById('status').textContent='Load failed: '+error.message;return;}products=data||[];render();document.getElementById('status').textContent='Loaded '+products.length+' products. Review names/images safely.';}
+function render(){const body=document.getElementById('rows');body.innerHTML='';let missing=0,broken=0;products.forEach(p=>{const s=imageStatus(p.product_image);if(s==='Missing')missing++;if(s==='Placeholder'||s==='Broken redirect')broken++;const tr=document.createElement('tr');tr.innerHTML=`<td>${p.id}</td><td><input id="name-${p.id}" value="${escapeHtml(p.product_name||'')}"></td><td>${p.product_price??''}</td><td>${escapeHtml(p.product_unit||'')}</td><td>${escapeHtml(p.product_category||'')}</td><td class="${s==='Present'?'ok':'bad'}">${s}</td><td><input id="img-${p.id}" value="${escapeHtml(p.product_image||'')}"></td><td><button class="btn" onclick="saveRow(${p.id})">Save</button></td>`;body.appendChild(tr);});document.getElementById('total').textContent=products.length;document.getElementById('missing').textContent=missing;document.getElementById('broken').textContent=broken;document.getElementById('loaded').textContent=products.length;}
+async function saveRow(id){const name=document.getElementById('name-'+id).value.trim();const image=document.getElementById('img-'+id).value.trim();if(!name){alert('Product name empty nahi ho sakta.');return;}if(!confirm('Sirf product '+id+' ka name/image save karna hai?'))return;const {error}=await db.from('products').update({product_name:name,product_image:image}).eq('id',id);if(error){alert('Save failed: '+error.message);return;}const p=products.find(x=>x.id===id);if(p){p.product_name=name;p.product_image=image;}render();alert('Saved successfully.');}
+function downloadCSV(){if(!products.length){alert('Pehle Load All Products click karein.');return;}const head=['id','product_name','price','unit','category','image_status','product_image'];const lines=[head.join(',')];products.forEach(p=>{const vals=[p.id,p.product_name,p.product_price,p.product_unit,p.product_category,imageStatus(p.product_image),p.product_image].map(v=>'"'+String(v??'').replaceAll('"','""')+'"');lines.push(vals.join(','));});const blob=new Blob([lines.join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='apna-bazaar-product-audit.csv';a.click();URL.revokeObjectURL(a.href);}
+function escapeHtml(v){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+loadProducts();
+</script>
+</body>
+</html>
