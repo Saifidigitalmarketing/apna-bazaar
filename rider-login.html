@@ -6,80 +6,9 @@
 <title>Rider Login - Apna Bazaar</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
-body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#effff4,#fff5ec)}
-.card{width:100%;max-width:430px;background:#fff;border-radius:22px;padding:35px;box-shadow:0 15px 45px rgba(0,0,0,.12)}
-.logo{text-align:center;color:#07883f;font-size:32px;font-weight:800;margin-bottom:8px}.subtitle{text-align:center;color:#666;margin-bottom:28px}
-.form-group{margin-bottom:16px}label{display:block;margin-bottom:7px;font-weight:bold;color:#333}input{width:100%;padding:14px;border:1px solid #ddd;border-radius:10px;outline:none;font-size:15px}input:focus{border-color:#07883f}
-button{width:100%;padding:14px;border:0;border-radius:10px;background:#ff6500;color:#fff;font-size:16px;font-weight:bold;cursor:pointer;margin-top:5px}button:disabled{opacity:.65;cursor:not-allowed}
-#message{margin-top:18px;text-align:center;font-weight:bold;line-height:1.5;word-break:break-word}.back{text-align:center;margin-top:20px}.back a{color:#07883f;text-decoration:none;font-weight:bold}
-@media(max-width:500px){.card{padding:25px 20px}}
-</style>
-</head>
-<body>
-<div class="card">
-<div class="logo">Apna Bazaar</div>
-<p class="subtitle">Rider Login</p>
-<div class="form-group"><label>Email Address</label><input type="email" id="email" autocomplete="username" placeholder="Enter rider email"></div>
-<div class="form-group"><label>Password</label><input type="password" id="password" autocomplete="current-password" placeholder="Enter password"></div>
-<button id="loginBtn" onclick="loginRider()">Login as Rider</button>
-<div id="message"></div>
-<div class="back"><a href="index.html">← Back to Apna Bazaar</a></div>
-</div>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#effff4,#fff5ec)}.card{width:100%;max-width:430px;background:#fff;border-radius:22px;padding:35px;box-shadow:0 15px 45px rgba(0,0,0,.12)}.logo{text-align:center;color:#07883f;font-size:32px;font-weight:800;margin-bottom:8px}.subtitle{text-align:center;color:#666;margin-bottom:28px}.form-group{margin-bottom:16px}label{display:block;margin-bottom:7px;font-weight:bold;color:#333}input{width:100%;padding:14px;border:1px solid #ddd;border-radius:10px;outline:none;font-size:15px}input:focus{border-color:#07883f}button{width:100%;padding:14px;border:0;border-radius:10px;background:#ff6500;color:#fff;font-size:16px;font-weight:bold;cursor:pointer;margin-top:5px}button:disabled{opacity:.65;cursor:not-allowed}#message{margin-top:18px;text-align:center;font-weight:bold;line-height:1.5;word-break:break-word}.back{text-align:center;margin-top:18px}.back a{color:#07883f;text-decoration:none;font-weight:bold}.register{margin-top:14px;padding-top:14px;border-top:1px solid #eee;text-align:center}.register a{color:#ff6500;font-weight:700;text-decoration:none}@media(max-width:500px){.card{padding:25px 20px}}
+</style></head><body><div class="card"><div class="logo">Apna Bazaar</div><p class="subtitle">Rider Login</p><div class="form-group"><label>Email Address</label><input type="email" id="email" autocomplete="username" placeholder="Enter rider email"></div><div class="form-group"><label>Password</label><input type="password" id="password" autocomplete="current-password" placeholder="Enter password"></div><button id="loginBtn" onclick="loginRider()">Login as Rider</button><div id="message"></div><div class="register">New rider? <a href="rider-register.html">Register as Rider</a></div><div class="back"><a href="index.html">← Back to Apna Bazaar</a></div></div>
 <script>
-const SUPABASE_URL="https://sdycertdcrcxuygunlgf.supabase.co";
-const SUPABASE_KEY="sb_publishable_IwpL3sk7-mkC65RsO5IX0Q_yn7iMqSO";
-const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-
-async function loginRider(){
- const email=document.getElementById('email').value.trim();
- const password=document.getElementById('password').value;
- const message=document.getElementById('message');
- const btn=document.getElementById('loginBtn');
- if(!email||!password){message.style.color='red';message.textContent='Please enter email and password.';return;}
- btn.disabled=true;message.style.color='#555';message.textContent='Checking rider account...';
-
- const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
- if(error){
-   btn.disabled=false;message.style.color='red';message.textContent='LOGIN ERROR: '+error.message;return;
- }
-
- const user=data.user;
- const {data:rider,error:riderError}=await supabaseClient
-   .from('riders')
-   .select('id,full_name,is_active')
-   .eq('id',user.id)
-   .maybeSingle();
-
- if(riderError){
-   btn.disabled=false;
-   message.style.color='red';
-   message.textContent='RIDER CHECK ERROR: '+riderError.message+' | Logged-in UID: '+user.id;
-   return;
- }
-
- if(!rider){
-   await supabaseClient.auth.signOut();
-   btn.disabled=false;
-   message.style.color='red';
-   message.textContent='RIDER PROFILE NOT FOUND | Logged-in UID: '+user.id;
-   return;
- }
-
- if(rider.is_active!==true){
-   await supabaseClient.auth.signOut();
-   btn.disabled=false;
-   message.style.color='red';
-   message.textContent='RIDER INACTIVE | Rider: '+(rider.full_name||rider.id)+' | is_active: '+String(rider.is_active);
-   return;
- }
-
- message.style.color='#07883f';
- message.textContent='Rider login successful! UID verified: '+user.id;
- setTimeout(()=>{window.location.href='rider.html';},1000);
-}
-
-document.getElementById('password').addEventListener('keydown',e=>{if(e.key==='Enter')loginRider();});
-</script>
-</body>
-</html>
+const SUPABASE_URL="https://sdycertdcrcxuygunlgf.supabase.co";const SUPABASE_KEY="sb_publishable_IwpL3sk7-mkC65RsO5IX0Q_yn7iMqSO";const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+async function loginRider(){const email=document.getElementById('email').value.trim(),password=document.getElementById('password').value,message=document.getElementById('message'),btn=document.getElementById('loginBtn');if(!email||!password){message.style.color='red';message.textContent='Please enter email and password.';return}btn.disabled=true;message.style.color='#555';message.textContent='Checking rider account...';const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});if(error){btn.disabled=false;message.style.color='red';message.textContent='LOGIN ERROR: '+error.message;return}const user=data.user;const {data:rider,error:riderError}=await supabaseClient.from('riders').select('id,full_name,is_active,approval_status').eq('id',user.id).maybeSingle();if(riderError){btn.disabled=false;message.style.color='red';message.textContent='RIDER CHECK ERROR: '+riderError.message;return}if(!rider){await supabaseClient.auth.signOut();btn.disabled=false;message.style.color='red';message.textContent='Rider profile not found.';return}if(rider.approval_status==='pending'){await supabaseClient.auth.signOut();btn.disabled=false;message.style.color='#d97706';message.textContent='Registration pending hai. Admin approval ka wait karein.';return}if(rider.approval_status==='rejected'){await supabaseClient.auth.signOut();btn.disabled=false;message.style.color='red';message.textContent='Rider registration reject ho gayi hai.';return}if(rider.is_active!==true||rider.approval_status!=='approved'){await supabaseClient.auth.signOut();btn.disabled=false;message.style.color='red';message.textContent='This rider account is not active.';return}message.style.color='#07883f';message.textContent='Rider login successful!';setTimeout(()=>location.href='rider.html',700)}document.getElementById('password').addEventListener('keydown',e=>{if(e.key==='Enter')loginRider()});
+</script></body></html>
