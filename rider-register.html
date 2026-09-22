@@ -12,6 +12,7 @@
 <div><label>CNIC Number</label><input id="cnic" placeholder="XXXXX-XXXXXXX-X" required></div><div><label>Password</label><input id="password" type="password" minlength="6" required></div>
 <div><label>Profile Photo</label><input id="profilePhoto" type="file" accept="image/*" required><div class="hint">Clear face photo</div></div>
 <div><label>CNIC Photo</label><input id="cnicPhoto" type="file" accept="image/*" required><div class="hint">Clear CNIC image</div></div>
+<div class="full"><label>Vehicle Photo</label><input id="vehiclePhoto" type="file" accept="image/*" required><div class="hint">Clear photo of delivery vehicle</div></div>
 </div><button id="registerBtn" onclick="registerRider()">Submit Rider Registration</button><div id="message"></div><div class="links"><a href="rider-login.html">Already registered? Rider Login</a></div></div>
 <script>
 const SUPABASE_URL='https://sdycertdcrcxuygunlgf.supabase.co';
@@ -20,13 +21,13 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 function show(t,c){const m=document.getElementById('message');m.textContent=t;m.style.color=c}
 async function uploadImage(file,userId,type){const ext=(file.name.split('.').pop()||'jpg').toLowerCase();const path=userId+'/'+type+'-'+Date.now()+'.'+ext;const {error}=await sb.storage.from('rider-documents').upload(path,file,{upsert:false});if(error)throw error;const {data}=sb.storage.from('rider-documents').getPublicUrl(path);return data.publicUrl}
 async function registerRider(){
- const btn=document.getElementById('registerBtn');const full_name=document.getElementById('name').value.trim(),phone=document.getElementById('phone').value.trim(),email=document.getElementById('email').value.trim(),vehicle_number=document.getElementById('vehicle').value.trim(),cnic_number=document.getElementById('cnic').value.trim(),password=document.getElementById('password').value,profile=document.getElementById('profilePhoto').files[0],cnicPhoto=document.getElementById('cnicPhoto').files[0];
- if(!full_name||!phone||!email||!vehicle_number||!cnic_number||!password||!profile||!cnicPhoto){show('Please complete all fields and photos.','red');return}if(password.length<6){show('Password kam az kam 6 characters ka hona chahiye.','red');return}
+ const btn=document.getElementById('registerBtn');const full_name=document.getElementById('name').value.trim(),phone=document.getElementById('phone').value.trim(),email=document.getElementById('email').value.trim(),vehicle_number=document.getElementById('vehicle').value.trim(),cnic_number=document.getElementById('cnic').value.trim(),password=document.getElementById('password').value,profile=document.getElementById('profilePhoto').files[0],cnicPhoto=document.getElementById('cnicPhoto').files[0],vehiclePhoto=document.getElementById('vehiclePhoto').files[0];
+ if(!full_name||!phone||!email||!vehicle_number||!cnic_number||!password||!profile||!cnicPhoto||!vehiclePhoto){show('Please complete all fields and all photos.','red');return}if(password.length<6){show('Password kam az kam 6 characters ka hona chahiye.','red');return}
  btn.disabled=true;show('Rider account create ho raha hai...','#555');
  try{
   const {data,error}=await sb.auth.signUp({email,password,options:{data:{account_type:'rider',full_name}}});if(error)throw error;if(!data.user)throw new Error('Rider user create nahi hua.');
-  const profile_photo_url=await uploadImage(profile,data.user.id,'profile');const cnic_photo_url=await uploadImage(cnicPhoto,data.user.id,'cnic');
-  const {error:insertError}=await sb.from('riders').insert({id:data.user.id,full_name,phone,cnic_number,cnic_photo_url,profile_photo_url,vehicle_number,approval_status:'pending',is_active:false,is_online:false});if(insertError)throw insertError;
+  const profile_photo_url=await uploadImage(profile,data.user.id,'profile');const cnic_photo_url=await uploadImage(cnicPhoto,data.user.id,'cnic');const vehicle_photo_url=await uploadImage(vehiclePhoto,data.user.id,'vehicle');
+  const {error:insertError}=await sb.from('riders').insert({id:data.user.id,full_name,phone,cnic_number,cnic_photo_url,profile_photo_url,vehicle_number,vehicle_photo_url,approval_status:'pending',is_active:false,is_online:false});if(insertError)throw insertError;
   await sb.auth.signOut();show('Registration submit ho gayi. Admin approval ke baad aap login kar sakenge.','#07883f');btn.textContent='Registration Submitted';
  }catch(e){show('Registration error: '+e.message,'red');btn.disabled=false}
 }
