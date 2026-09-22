@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rider Dashboard - Apna Bazaar</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}body{background:#f4f7f5;color:#222;min-height:100vh}.header{background:#087a3e;color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;gap:15px}.header h1{font-size:23px}.logout{border:0;background:#ff6500;color:#fff;padding:10px 16px;border-radius:8px;font-weight:700;cursor:pointer}.container{max-width:1100px;margin:28px auto;padding:0 16px}.welcome,.panel{background:#fff;border-radius:14px;padding:22px;box-shadow:0 4px 16px rgba(0,0,0,.08);margin-bottom:20px}.welcome h2,.panel h2{color:#087a3e;margin-bottom:8px}.status{margin-top:8px;color:#666}.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:20px}.card{background:#fff;border-radius:14px;padding:20px;box-shadow:0 4px 16px rgba(0,0,0,.08)}.card strong{display:block;color:#087a3e;font-size:28px;margin-top:8px}.empty{padding:20px;background:#f8faf8;border-radius:10px;color:#666;text-align:center}.error{color:#c62828;font-weight:700}.loading{color:#666}.order{border:1px solid #e1e7e3;border-radius:12px;padding:16px;margin-top:12px}.order h3{color:#087a3e;margin-bottom:8px}.meta{line-height:1.7;color:#444}@media(max-width:650px){.header{padding:15px}.header h1{font-size:19px}.cards{grid-template-columns:1fr}.container{margin-top:18px}}
+</style>
+</head>
+<body>
+<header class="header"><div><h1>Apna Bazaar Rider</h1><small id="riderHeader">Secure Rider Dashboard</small></div><button class="logout" onclick="logoutRider()">Logout</button></header>
+<main class="container">
+<section class="welcome"><h2 id="welcomeTitle">Rider Dashboard</h2><p id="securityStatus" class="status loading">Checking secure rider session...</p></section>
+<div class="cards"><div class="card">Active Deliveries<strong id="activeCount">0</strong></div><div class="card">Completed Deliveries<strong id="completedCount">0</strong></div></div>
+<section class="panel"><h2>My Assigned Orders</h2><div id="ordersList"><div class="empty">Loading assigned orders...</div></div></section>
+</main>
+<script>
+const SUPABASE_URL='https://sdycertdcrcxuygunlgf.supabase.co';
+const SUPABASE_KEY='sb_publishable_IwpL3sk7-mkC65RsO5IX0Q_yn7iMqSO';
+const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+
+async function initRiderDashboard(){
+ const status=document.getElementById('securityStatus');
+ const {data:{session}}=await supabaseClient.auth.getSession();
+ if(!session?.user){window.location.replace('rider-login.html');return;}
+ const uid=session.user.id;
+ const {data:rider,error:riderError}=await supabaseClient.from('riders').select('id,full_name,is_active').eq('id',uid).maybeSingle();
+ if(riderError||!rider||rider.is_active!==true){
+   await supabaseClient.auth.signOut();
+   window.location.replace('rider-login.html');return;
+ }
+ document.getElementById('welcomeTitle').textContent='Welcome, '+(rider.full_name||'Rider');
+ document.getElementById('riderHeader').textContent=rider.full_name||'Active Rider';
+ status.textContent='Secure rider account verified.';status.className='status';
+ await loadAssignedOrders(uid);
+}
+
+async function loadAssignedOrders(uid){
+ const box=document.getElementById('ordersList');
+ const {data:orders,error}=await supabaseClient.from('orders')
+   .select('id,created_at,customer_name,customer_phone,customer_area,customer_address,customer_latitude,customer_longitude,distance_km,delivery_charge,subtotal,grand_total,items,order_status,rider_status,assigned_at,rider_status_updated_at')
+   .eq('assigned_rider_id',uid).order('created_at',{ascending:false});
+ if(error){box.innerHTML='<div class="empty error">Orders load error: '+esc(error.message)+'</div>';return;}
+ const list=orders||[];
+ const completed=list.filter(o=>o.rider_status==='Delivered');
+ const active=list.filter(o=>o.rider_status!=='Delivered');
+ document.getElementById('activeCount').textContent=active.length;
+ document.getElementById('completedCount').textContent=completed.length;
+ if(!list.length){box.innerHTML='<div class="empty">Abhi aap ko koi order assign nahi hua.</div>';return;}
+ box.innerHTML=list.map(o=>`<div class="order"><h3>Order #${esc(o.id)} — ${esc(o.rider_status||'Assigned')}</h3><div class="meta"><b>Customer:</b> ${esc(o.customer_name||'-')}<br><b>Phone:</b> ${esc(o.customer_phone||'-')}<br><b>Address:</b> ${esc(o.customer_address||o.customer_area||'-')}<br><b>Total:</b> Rs. ${esc(o.grand_total??'-')}</div></div>`).join('');
+}
+
+async function logoutRider(){await supabaseClient.auth.signOut();window.location.replace('rider-login.html');}
+initRiderDashboard();
+</script>
+</body>
+</html>
