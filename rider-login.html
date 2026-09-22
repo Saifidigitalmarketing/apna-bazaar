@@ -12,7 +12,7 @@ body{min-height:100vh;display:flex;align-items:center;justify-content:center;pad
 .logo{text-align:center;color:#07883f;font-size:32px;font-weight:800;margin-bottom:8px}.subtitle{text-align:center;color:#666;margin-bottom:28px}
 .form-group{margin-bottom:16px}label{display:block;margin-bottom:7px;font-weight:bold;color:#333}input{width:100%;padding:14px;border:1px solid #ddd;border-radius:10px;outline:none;font-size:15px}input:focus{border-color:#07883f}
 button{width:100%;padding:14px;border:0;border-radius:10px;background:#ff6500;color:#fff;font-size:16px;font-weight:bold;cursor:pointer;margin-top:5px}button:disabled{opacity:.65;cursor:not-allowed}
-#message{margin-top:18px;text-align:center;font-weight:bold;line-height:1.5}.back{text-align:center;margin-top:20px}.back a{color:#07883f;text-decoration:none;font-weight:bold}
+#message{margin-top:18px;text-align:center;font-weight:bold;line-height:1.5;word-break:break-word}.back{text-align:center;margin-top:20px}.back a{color:#07883f;text-decoration:none;font-weight:bold}
 @media(max-width:500px){.card{padding:25px 20px}}
 </style>
 </head>
@@ -38,15 +38,45 @@ async function loginRider(){
  const btn=document.getElementById('loginBtn');
  if(!email||!password){message.style.color='red';message.textContent='Please enter email and password.';return;}
  btn.disabled=true;message.style.color='#555';message.textContent='Checking rider account...';
+
  const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
- if(error){btn.disabled=false;message.style.color='red';message.textContent='Invalid email or password.';return;}
- const user=data.user;
- const {data:rider,error:riderError}=await supabaseClient.from('riders').select('id,full_name,is_active').eq('id',user.id).maybeSingle();
- if(riderError||!rider||rider.is_active!==true){
-   await supabaseClient.auth.signOut();btn.disabled=false;message.style.color='red';message.textContent='Access denied. This account is not an active rider.';return;
+ if(error){
+   btn.disabled=false;message.style.color='red';message.textContent='LOGIN ERROR: '+error.message;return;
  }
- message.style.color='#07883f';message.textContent='Rider login successful!';
- setTimeout(()=>{window.location.href='rider.html';},700);
+
+ const user=data.user;
+ const {data:rider,error:riderError}=await supabaseClient
+   .from('riders')
+   .select('id,full_name,is_active')
+   .eq('id',user.id)
+   .maybeSingle();
+
+ if(riderError){
+   btn.disabled=false;
+   message.style.color='red';
+   message.textContent='RIDER CHECK ERROR: '+riderError.message+' | Logged-in UID: '+user.id;
+   return;
+ }
+
+ if(!rider){
+   await supabaseClient.auth.signOut();
+   btn.disabled=false;
+   message.style.color='red';
+   message.textContent='RIDER PROFILE NOT FOUND | Logged-in UID: '+user.id;
+   return;
+ }
+
+ if(rider.is_active!==true){
+   await supabaseClient.auth.signOut();
+   btn.disabled=false;
+   message.style.color='red';
+   message.textContent='RIDER INACTIVE | Rider: '+(rider.full_name||rider.id)+' | is_active: '+String(rider.is_active);
+   return;
+ }
+
+ message.style.color='#07883f';
+ message.textContent='Rider login successful! UID verified: '+user.id;
+ setTimeout(()=>{window.location.href='rider.html';},1000);
 }
 
 document.getElementById('password').addEventListener('keydown',e=>{if(e.key==='Enter')loginRider();});
