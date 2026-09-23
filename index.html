@@ -5,68 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
     <title>Apna Bazaar - Local Delivery Test</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+      .payment-method{margin-top:14px}.payment-method h3{margin:0 0 12px;color:#146c37;font-size:20px}.payment-options{display:grid;grid-template-columns:1fr;gap:10px}.payment-card{position:relative;display:flex!important;align-items:center;gap:13px;padding:14px 15px;border:1.5px solid #dfe8e1;border-radius:12px;background:#fff;cursor:pointer;transition:.2s ease}.payment-card:hover{border-color:#0b8a45;background:#f8fff9}.payment-card input{position:absolute;opacity:0;pointer-events:none}.payment-icon{width:42px;height:42px;flex:0 0 42px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:#f0f8f3;font-size:21px}.payment-copy{display:flex;flex-direction:column;gap:3px;min-width:0}.payment-copy strong{font-size:15px;color:#1f2937}.payment-copy small{font-size:12px;color:#718078}.payment-check{margin-left:auto;width:22px;height:22px;border:2px solid #cbd8cf;border-radius:50%;position:relative;flex:0 0 22px}.payment-card:has(input:checked){border-color:#07883f;background:#f2fff7;box-shadow:0 0 0 2px rgba(7,136,63,.08)}.payment-card:has(input:checked) .payment-icon{background:#e1f7e9}.payment-card:has(input:checked) .payment-check{border-color:#07883f;background:#07883f}.payment-card:has(input:checked) .payment-check:after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:800}@media(min-width:520px){.payment-options{grid-template-columns:1fr 1fr}.payment-card.cod{grid-column:1/-1}}@media(max-width:519px){.payment-card{padding:13px 12px}.payment-copy strong{font-size:14px}}
+    </style>
 </head>
 <body>
 <header class="main-header">
    <div class="logo"><img src="apna-bazaar-logo.png" alt="Apna Bazaar Logo"></div>
-    <div class="header-actions">
-        <button type="button" class="menu-toggle" id="menuToggle" aria-label="Open Menu">☰</button>
-        <div class="header-auth-actions">
-            <a href="login.html" id="loginMenu" class="header-login-btn">👤 Login</a>
-            <a href="#" id="accountMenu" style="display:none;">My Account</a>
-            <a href="#" id="logoutMenu" class="header-login-btn" style="display:none;">Logout</a>
-        </div>
-        <div class="cart">🛒 Cart <span>0</span></div>
-    </div>
-    <nav class="main-menu" id="mainMenu">
-        <a href="#home">Home</a>
-        <a href="#categories">Categories</a>
-        <a href="#orderTracking">Track Order</a>
-        <a href="#" id="currentOrderMenu">Current Order</a>
-        <a href="rider-register.html" class="become-rider-link">🛵 Become a Rider</a>
-    </nav>
-    <div class="location">📍 Deliver to: <strong>Select Area</strong></div>
+    <div class="header-actions"><button type="button" class="menu-toggle" id="menuToggle" aria-label="Open Menu">☰</button><div class="header-auth-actions"><a href="login.html" id="loginMenu" class="header-login-btn">👤 Login</a><a href="#" id="accountMenu" style="display:none;">My Account</a><a href="#" id="logoutMenu" class="header-login-btn" style="display:none;">Logout</a></div><div class="cart">🛒 Cart <span>0</span></div></div>
+    <nav class="main-menu" id="mainMenu"><a href="#home">Home</a><a href="#categories">Categories</a><a href="#orderTracking">Track Order</a><a href="#" id="currentOrderMenu">Current Order</a><a href="rider-register.html" class="become-rider-link">🛵 Become a Rider</a></nav><div class="location">📍 Deliver to: <strong>Select Area</strong></div>
 </header>
-<div id="currentOrderOverlay" class="current-order-overlay"></div>
-<aside id="currentOrderPanel" class="current-order-panel">
-    <button type="button" id="closeCurrentOrderPanel" class="current-order-close">×</button>
-    <div class="order-success-icon">✓</div>
-    <p class="order-small-title">ORDER CONFIRMATION</p>
-    <h2>Thank you for your order!</h2>
-    <p class="order-confirmed-text">Your order has been confirmed.</p>
-    <div class="current-order-box">
-        <div class="current-order-row"><span>Order ID</span><strong>#<span id="currentOrderId">--</span></strong></div>
-        <div class="current-order-row"><span>Order Status</span><strong id="currentOrderStatus">Pending</strong></div>
-        <div class="current-order-row"><span>Grand Total</span><strong id="currentOrderTotal">Rs. 0</strong></div>
-    </div>
-    <div class="order-update-box"><h3>Order Updates</h3><p>Check here anytime to see the latest status of your order.</p></div>
-    <button type="button" id="refreshCurrentOrder" class="refresh-current-order-btn">Check Latest Status</button>
-</aside>
-<section class="hero" id="home">
-    <div class="hero-content">
-        <h1>Your Local Bazaar,<br>Delivered to Your Door</h1>
-        <p>Fresh groceries and daily essentials from nearby shops.</p>
-        <div class="search-box"><input type="text" id="searchInput" placeholder="Search milk, vegetables, fruits, bakery..."><button id="searchButton">Search</button></div>
-    </div>
-    <div class="hero-image"><img src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=900&q=80" alt="Local Grocery Market"></div>
-</section>
-<section class="categories" id="categories">
-    <h2>Shop by Category</h2>
-    <div class="category-list">
-        <div class="category" data-category="Grocery"><img src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=500&q=80" alt="Grocery"><h3>Grocery</h3></div>
-        <div class="category" data-category="Milk & Dairy"><img src="https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=500&q=80" alt="Milk and Dairy"><h3>Milk & Dairy</h3></div>
-        <div class="category" data-category="Vegetables"><img src="https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?auto=format&fit=crop&w=500&q=80" alt="Vegetables"><h3>Vegetables</h3></div>
-        <div class="category" data-category="Fruits"><img src="https://images.unsplash.com/photo-1619566636858-adf3ef46400b?auto=format&fit=crop&w=500&q=80" alt="Fruits"><h3>Fruits</h3></div>
-        <div class="category" data-category="Bakery"><img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=500&q=80" alt="Bakery"><h3>Bakery</h3></div>
-    </div>
-</section>
-<main>
-<section class="order-tracking" id="orderTracking" style="display: none;"><h2>Track Your Order</h2><p>Enter your Order ID to check the latest status.</p><div class="tracking-box"><input type="number" id="trackingOrderId" placeholder="Enter Order ID"><button type="button" onclick="checkOrderNow()">Check Status</button></div><div id="trackingResult"></div></section>
-<section class="products"><h2>Popular Near You</h2><div class="product-list" id="productList"></div></section>
-</main>
-<div class="cart-panel" id="cartPanel"><div class="cart-header"><h2>Your Cart</h2><button id="closeCart">×</button></div><div id="cartItems"><p class="empty-cart">Your cart is empty.</p></div><div class="more-products-section"><h3>Add More Items</h3><p>More products you may like</p><div id="moreProducts" class="more-products"></div></div><div class="cart-summary"><div class="cart-total"><span>Total</span><strong>Rs. <span id="cartTotal">0</span></strong></div><button class="checkout-btn">Proceed to Checkout</button></div></div>
-<div class="cart-overlay" id="cartOverlay"></div>
-<div class="checkout-panel" id="checkoutPanel"><div class="checkout-header"><h2>Checkout</h2><button id="closeCheckout">×</button></div><div class="checkout-content"><h3>Delivery Details</h3><div class="checkout-form"><input type="text" id="customerName" placeholder="Full Name"><input type="tel" id="customerPhone" placeholder="Phone Number"><input type="text" id="customerArea" placeholder="Area / Sector"><div class="location-buttons"><button type="button" id="useCurrentLocation">Use Current Location</button></div><p class="location-status" id="locationStatus">Location not selected</p><textarea id="customerAddress" placeholder="Complete Delivery Address" rows="4"></textarea></div></div><button type="button" id="continueCheckout" class="continue-checkout-btn">Continue</button><div class="order-summary-step" id="orderSummaryStep"><h3>Order Summary</h3><div id="checkoutItems"></div><div class="checkout-price-row"><span>Subtotal</span><strong>Rs. <span id="checkoutSubtotal">0</span></strong></div><div class="checkout-price-row"><span>Delivery Charges</span><strong>Rs. <span id="deliveryCharges">0</span></strong></div><div class="checkout-price-row grand-total"><span>Grand Total</span><strong>Rs. <span id="grandTotal">0</span></strong></div><div class="payment-method"><h3>Payment Method</h3><label><input type="radio" name="paymentMethod" value="Cash on Delivery" checked> 💵 Cash on Delivery</label><label><input type="radio" name="paymentMethod" value="JazzCash"> 📱 JazzCash</label><label><input type="radio" name="paymentMethod" value="EasyPaisa"> 📱 Easypaisa</label></div><button type="button" id="placeOrderBtn" class="place-order-btn">Place Order</button></div></div>
-<div class="checkout-overlay" id="checkoutOverlay"></div>
+<div id="currentOrderOverlay" class="current-order-overlay"></div><aside id="currentOrderPanel" class="current-order-panel"><button type="button" id="closeCurrentOrderPanel" class="current-order-close">×</button><div class="order-success-icon">✓</div><p class="order-small-title">ORDER CONFIRMATION</p><h2>Thank you for your order!</h2><p class="order-confirmed-text">Your order has been confirmed.</p><div class="current-order-box"><div class="current-order-row"><span>Order ID</span><strong>#<span id="currentOrderId">--</span></strong></div><div class="current-order-row"><span>Order Status</span><strong id="currentOrderStatus">Pending</strong></div><div class="current-order-row"><span>Grand Total</span><strong id="currentOrderTotal">Rs. 0</strong></div></div><div class="order-update-box"><h3>Order Updates</h3><p>Check here anytime to see the latest status of your order.</p></div><button type="button" id="refreshCurrentOrder" class="refresh-current-order-btn">Check Latest Status</button></aside>
+<section class="hero" id="home"><div class="hero-content"><h1>Your Local Bazaar,<br>Delivered to Your Door</h1><p>Fresh groceries and daily essentials from nearby shops.</p><div class="search-box"><input type="text" id="searchInput" placeholder="Search milk, vegetables, fruits, bakery..."><button id="searchButton">Search</button></div></div><div class="hero-image"><img src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=900&q=80" alt="Local Grocery Market"></div></section>
+<section class="categories" id="categories"><h2>Shop by Category</h2><div class="category-list"><div class="category" data-category="Grocery"><img src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=500&q=80" alt="Grocery"><h3>Grocery</h3></div><div class="category" data-category="Milk & Dairy"><img src="https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=500&q=80" alt="Milk and Dairy"><h3>Milk & Dairy</h3></div><div class="category" data-category="Vegetables"><img src="https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?auto=format&fit=crop&w=500&q=80" alt="Vegetables"><h3>Vegetables</h3></div><div class="category" data-category="Fruits"><img src="https://images.unsplash.com/photo-1619566636858-adf3ef46400b?auto=format&fit=crop&w=500&q=80" alt="Fruits"><h3>Fruits</h3></div><div class="category" data-category="Bakery"><img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=500&q=80" alt="Bakery"><h3>Bakery</h3></div></div></section>
+<main><section class="order-tracking" id="orderTracking" style="display: none;"><h2>Track Your Order</h2><p>Enter your Order ID to check the latest status.</p><div class="tracking-box"><input type="number" id="trackingOrderId" placeholder="Enter Order ID"><button type="button" onclick="checkOrderNow()">Check Status</button></div><div id="trackingResult"></div></section><section class="products"><h2>Popular Near You</h2><div class="product-list" id="productList"></div></section></main>
+<div class="cart-panel" id="cartPanel"><div class="cart-header"><h2>Your Cart</h2><button id="closeCart">×</button></div><div id="cartItems"><p class="empty-cart">Your cart is empty.</p></div><div class="more-products-section"><h3>Add More Items</h3><p>More products you may like</p><div id="moreProducts" class="more-products"></div></div><div class="cart-summary"><div class="cart-total"><span>Total</span><strong>Rs. <span id="cartTotal">0</span></strong></div><button class="checkout-btn">Proceed to Checkout</button></div></div><div class="cart-overlay" id="cartOverlay"></div>
+<div class="checkout-panel" id="checkoutPanel"><div class="checkout-header"><h2>Checkout</h2><button id="closeCheckout">×</button></div><div class="checkout-content"><h3>Delivery Details</h3><div class="checkout-form"><input type="text" id="customerName" placeholder="Full Name"><input type="tel" id="customerPhone" placeholder="Phone Number"><input type="text" id="customerArea" placeholder="Area / Sector"><div class="location-buttons"><button type="button" id="useCurrentLocation">Use Current Location</button></div><p class="location-status" id="locationStatus">Location not selected</p><textarea id="customerAddress" placeholder="Complete Delivery Address" rows="4"></textarea></div></div><button type="button" id="continueCheckout" class="continue-checkout-btn">Continue</button><div class="order-summary-step" id="orderSummaryStep"><h3>Order Summary</h3><div id="checkoutItems"></div><div class="checkout-price-row"><span>Subtotal</span><strong>Rs. <span id="checkoutSubtotal">0</span></strong></div><div class="checkout-price-row"><span>Delivery Charges</span><strong>Rs. <span id="deliveryCharges">0</span></strong></div><div class="checkout-price-row grand-total"><span>Grand Total</span><strong>Rs. <span id="grandTotal">0</span></strong></div><div class="payment-method"><h3>Payment Method</h3><div class="payment-options"><label class="payment-card cod"><input type="radio" name="paymentMethod" value="Cash on Delivery" checked><span class="payment-icon">💵</span><span class="payment-copy"><strong>Cash on Delivery</strong><small>Pay when your order arrives</small></span><span class="payment-check"></span></label><label class="payment-card"><input type="radio" name="paymentMethod" value="JazzCash"><span class="payment-icon">📱</span><span class="payment-copy"><strong>JazzCash</strong><small>Pay securely with JazzCash</small></span><span class="payment-check"></span></label><label class="payment-card"><input type="radio" name="paymentMethod" value="EasyPaisa"><span class="payment-icon">💳</span><span class="payment-copy"><strong>Easypaisa</strong><small>Pay securely with Easypaisa</small></span><span class="payment-check"></span></label></div></div><button type="button" id="placeOrderBtn" class="place-order-btn">Place Order</button></div></div><div class="checkout-overlay" id="checkoutOverlay"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="script.js"></script>
 </body></html>
