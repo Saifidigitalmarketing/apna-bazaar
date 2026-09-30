@@ -23,5 +23,7 @@
 - `script.js` aur `style.css` **CRLF** line endings use karte hain — edit ke baad CRLF hi rehne dein warna poori file diff mein aa jati hai.
 - Supabase: `products`, `orders`, `riders` tables, `rider-documents` storage bucket.
   Rider SQL: `rider-system-final.sql` (Supabase SQL Editor mein chalti hai; repo se apply nahi hoti).
+- **Product images:** `admin-images.html` (admin sidebar → Product Images). Prompts aur tile→product mapping
+  `product-image-batches.js` mein hain (9 products = 1 ChatGPT 3x3 grid image). Images `product-images` bucket mein WebP.
 - Test: `python3 -m http.server` + Playwright (Chromium `/opt/pw-browsers` mein). Sandbox mein CDN
   (unpkg, jsdelivr) blocked hain — test mein `npm pack` se local copy route karein.

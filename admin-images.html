@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Product Images - Apna Bazaar Admin</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f5f8f6;color:#20231f}
+.top{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:12px;height:64px;padding:0 20px;background:#fff;border-bottom:1px solid #e3e9e5}
+.top h1{margin:0;font-size:20px;color:#087a3e}
+.top a{color:#087a3e;font-weight:700;text-decoration:none}
+.content{max-width:1100px;margin:0 auto;padding:20px}
+.box{background:#fff;border:1px solid #e5ebe7;border-radius:15px;box-shadow:0 5px 18px rgba(0,0,0,.05);padding:20px;margin-bottom:18px}
+.box h2{margin:0 0 6px;color:#087a3e;font-size:19px}
+.muted{color:#667069;font-size:14px;line-height:1.5;margin:0 0 12px}
+.steps{margin:0;padding-left:20px;color:#333;font-size:14px;line-height:1.8}
+.batches{display:flex;flex-wrap:wrap;gap:8px}
+.batches button{min-width:52px;border:1px solid #d9e3dc;background:#fff;border-radius:10px;padding:9px 10px;font-weight:700;cursor:pointer;color:#333}
+.batches button.done{background:#e8f6ed;border-color:#9fd3b1;color:#087a3e}
+.batches button.active{background:#ff6500;border-color:#ff6500;color:#fff}
+.btn{border:0;border-radius:10px;padding:11px 16px;font-weight:700;font-size:14px;cursor:pointer}
+.green{background:#087a3e;color:#fff}.orange{background:#ff6500;color:#fff}.grey{background:#edf2ef;color:#333}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+textarea{width:100%;min-height:170px;border:1px solid #dfe5e1;border-radius:10px;padding:12px;font:13px/1.5 monospace;resize:vertical;background:#fbfdfb}
+.file{display:inline-flex;align-items:center;gap:8px;background:#087a3e;color:#fff;border-radius:10px;padding:11px 16px;font-weight:700;cursor:pointer}
+.file input{display:none}
+.trim{display:flex;align-items:center;gap:8px;font-size:14px;color:#44504a}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.card{border:1px solid #e2e9e4;border-radius:13px;padding:10px;background:#fff}
+.card.off{opacity:.45}
+.card h3{margin:0 0 8px;font-size:14px;color:#20231f;display:flex;justify-content:space-between;gap:6px}
+.card h3 small{color:#8a948e;font-weight:400}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pair div{font-size:11px;color:#6b746e;text-align:center}
+.pair img,.pair .ph{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:9px;background:#eef2ef;border:1px solid #e5ebe7}
+.pair .ph{display:flex;align-items:center;justify-content:center;color:#9aa39d;font-size:12px}
+.card .row{margin-top:8px;justify-content:space-between;font-size:13px}
+.card label.single{color:#087a3e;font-weight:700;cursor:pointer}
+.card label.single input{display:none}
+.status{margin-top:12px;padding:11px 13px;border-radius:10px;background:#f1f3f2;color:#44504a;font-size:14px;line-height:1.5;white-space:pre-wrap}
+.status.ok{background:#e8f6ed;color:#087a3e}.status.err{background:#fdecec;color:#b42318}
+.hidden{display:none}
+@media(max-width:700px){.grid{grid-template-columns:1fr 1fr}.content{padding:12px}.box{padding:15px}}
+@media(max-width:420px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="top"><h1>🖼️ Product Images</h1><a href="admin.html">← Admin Panel</a></header>
+<main class="content">
+
+<section class="box">
+<h2>Kaise kaam karta hai</h2>
+<ol class="steps">
+<li>Neeche se <b>Batch</b> chunein (har batch = 9 products).</li>
+<li><b>Copy Prompt</b> dabayein, ChatGPT mein paste karein aur image banwa kar download kar lein.</li>
+<li><b>Grid Image Upload</b> se wo image yahan daalein. Page usay 9 hisson mein kaat kar har product ke saath dikhayega.</li>
+<li>Koi tile theek na ho to us product ka checkbox hata dein, ya <b>Single image</b> se alag image laga dein.</li>
+<li><b>Save Images</b> dabayein. Images chhoti ho kar Supabase mein save hongi aur website par lag jayengi.</li>
+</ol>
+</section>
+
+<section class="box">
+<h2>Batch chunein</h2>
+<p class="muted" id="batchSummary">Loading products...</p>
+<div class="batches" id="batchButtons"></div>
+</section>
+
+<section class="box hidden" id="batchBox">
+<h2 id="batchTitle">Batch</h2>
+<p class="muted">Ye prompt ChatGPT mein paste karein. Aik hi image mein 9 products banenge.</p>
+<textarea id="promptText" readonly></textarea>
+<div class="row" style="margin-top:10px">
+<button class="btn orange" id="copyPrompt" type="button">📋 Copy Prompt</button>
+<a class="btn grey" href="https://chatgpt.com/" target="_blank" rel="noopener" style="text-decoration:none">ChatGPT kholein ↗</a>
+</div>
+
+<div class="row" style="margin-top:18px">
+<label class="file">⬆️ Grid Image Upload<input type="file" id="gridFile" accept="image/*"></label>
+<span class="trim">Kinare kaatein <input type="range" id="trim" min="0" max="8" step="0.5" value="2"> <b id="trimValue">2%</b></span>
+</div>
+
+<div class="grid" id="tiles"></div>
+
+<div class="row" style="margin-top:16px">
+<button class="btn green" id="saveBtn" type="button" disabled>💾 Save Images</button>
+</div>
+<div class="status hidden" id="status"></div>
+</section>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="product-image-batches.js?v=1"></script>
+<script>
+const U='https://sdycertdcrcxuygunlgf.supabase.co',K='sb_publishable_IwpL3sk7-mkC65RsO5IX0Q_yn7iMqSO',db=supabase.createClient(U,K),ADMIN='saifyounas112@gmail.com';
+const BUCKET='product-images';
+const MAX_SIZE=600; // px — product card ke liye kaafi
+const BATCHES=window.PRODUCT_IMAGE_BATCHES||[];
+let products={},current=null,gridImage=null,picks={};
+
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+const slug=s=>String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40);
+const isNewImage=u=>typeof u==='string'&&u.includes('/storage/v1/object/public/'+BUCKET+'/');
+
+function setStatus(text,type=''){const s=$('status');s.textContent=text;s.className='status'+(type?' '+type:'');}
+
+async function protect(){
+  const{data:{user}}=await db.auth.getUser();
+  if(!user||String(user.email).toLowerCase()!==ADMIN){location.replace('admin-login.html');return false}
+  return true;
+}
+
+async function loadProducts(){
+  const{data,error}=await db.from('products').select('id,product_name,product_image').order('id');
+  if(error){$('batchSummary').textContent='Products load nahi hue: '+error.message;return}
+  products={};data.forEach(p=>products[p.id]=p);
+  renderBatchButtons();
+}
+
+function batchDone(b){return b.items.every(i=>isNewImage(products[i.id]?.product_image))}
+
+function renderBatchButtons(){
+  const done=BATCHES.filter(batchDone).length;
+  $('batchSummary').textContent=`${BATCHES.length} batches — ${done} mukammal (hare), ${BATCHES.length-done} baqi.`;
+  $('batchButtons').innerHTML=BATCHES.map(b=>`<button type="button" class="${batchDone(b)?'done':''} ${current&&current.batch===b.batch?'active':''}" data-batch="${b.batch}">${b.batch}</button>`).join('');
+  $('batchButtons').querySelectorAll('button').forEach(btn=>btn.onclick=()=>openBatch(Number(btn.dataset.batch)));
+}
+
+function openBatch(n){
+  current=BATCHES.find(b=>b.batch===n);gridImage=null;picks={};
+  $('gridFile').value='';
+  $('batchBox').classList.remove('hidden');
+  $('batchTitle').textContent=`Batch ${n} — ${current.items.map(i=>i.name).join(', ')}`;
+  $('promptText').value=current.prompt;
+  $('status').classList.add('hidden');
+  renderBatchButtons();renderTiles();
+  $('batchBox').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// Grid image ko 3x3 mein kaat kar har tile ka canvas banao
+function cutTile(img,index,trimPct){
+  const col=index%3,row=Math.floor(index/3);
+  const cw=img.naturalWidth/3,ch=img.naturalHeight/3;
+  const tx=cw*trimPct/100,ty=ch*trimPct/100;
+  return drawToCanvas(img,col*cw+tx,row*ch+ty,cw-2*tx,ch-2*ty);
+}
+
+// Beech se square kaat kar MAX_SIZE tak chhota karo
+function drawToCanvas(img,sx,sy,sw,sh){
+  const side=Math.min(sw,sh);
+  sx+=(sw-side)/2;sy+=(sh-side)/2;
+  const out=Math.min(MAX_SIZE,Math.round(side));
+  const c=document.createElement('canvas');c.width=out;c.height=out;
+  const ctx=c.getContext('2d');ctx.imageSmoothingQuality='high';
+  ctx.drawImage(img,sx,sy,side,side,0,0,out,out);
+  return c;
+}
+
+function loadImageFile(file){
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(file),img=new Image();
+    img.onload=()=>resolve(img);img.onerror=()=>reject(new Error('Image khul nahi saki'));img.src=url;
+  });
+}
+
+function rebuildGridPicks(){
+  if(!gridImage)return;
+  const trim=Number($('trim').value);
+  current.items.forEach((item,i)=>{
+    if(picks[item.id]&&picks[item.id].source==='single')return;
+    picks[item.id]={canvas:cutTile(gridImage,i,trim),use:picks[item.id]?picks[item.id].use:true,source:'grid'};
+  });
+}
+
+function renderTiles(){
+  if(!current)return;
+  $('tiles').innerHTML=current.items.map(item=>{
+    const p=products[item.id]||{},pick=picks[item.id];
+    const old=p.product_image?`<img src="${esc(p.product_image)}" alt="" loading="lazy">`:'<span class="ph">No image</span>';
+    const neu=pick?`<img src="${pick.canvas.toDataURL('image/jpeg',.8)}" alt="">`:'<span class="ph">Abhi nahi</span>';
+    return `<div class="card ${pick&&!pick.use?'off':''}">
+      <h3>${esc(item.name)} <small>#${item.id}</small></h3>
+      <div class="pair"><div>Abhi wali${old}</div><div>Nayi${neu}</div></div>
+      <div class="row">
+        <label><input type="checkbox" data-use="${item.id}" ${pick&&pick.use?'checked':''} ${pick?'':'disabled'}> Save karein</label>
+        <label class="single">Single image<input type="file" accept="image/*" data-single="${item.id}"></label>
+      </div></div>`;
+  }).join('');
+  $('tiles').querySelectorAll('[data-use]').forEach(cb=>cb.onchange=()=>{picks[cb.dataset.use].use=cb.checked;renderTiles()});
+  $('tiles').querySelectorAll('[data-single]').forEach(inp=>inp.onchange=async()=>{
+    const f=inp.files[0];if(!f)return;
+    try{const img=await loadImageFile(f);picks[inp.dataset.single]={canvas:drawToCanvas(img,0,0,img.naturalWidth,img.naturalHeight),use:true,source:'single'};renderTiles()}
+    catch(e){alert(e.message)}
+  });
+  $('saveBtn').disabled=!Object.values(picks).some(p=>p.use);
+}
+
+// WebP sab se halka; jo browser WebP na bana sake (purana Safari) wahan JPEG
+function canvasToBlob(canvas){
+  return new Promise(resolve=>canvas.toBlob(b=>{
+    if(b&&b.type==='image/webp')return resolve(b);
+    canvas.toBlob(j=>resolve(j),'image/jpeg',.85);
+  },'image/webp',.82));
+}
+
+async function saveImages(){
+  const list=current.items.filter(i=>picks[i.id]&&picks[i.id].use);
+  if(!list.length)return;
+  if(!confirm(`${list.length} products ki nayi images save karni hain?`))return;
+  $('saveBtn').disabled=true;
+  const results=[];let ok=0;
+  for(const [n,item] of list.entries()){
+    setStatus(`Saving ${n+1}/${list.length}: ${item.name}...`);
+    try{
+      const blob=await canvasToBlob(picks[item.id].canvas);
+      const ext=blob.type==='image/webp'?'webp':'jpg';
+      const path=`products/${item.id}-${slug(item.name)}-${Date.now()}.${ext}`;
+      const up=await db.storage.from(BUCKET).upload(path,blob,{contentType:blob.type,cacheControl:'31536000',upsert:false});
+      if(up.error)throw up.error;
+      const url=db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+      const{data,error}=await db.from('products').update({product_image:url}).eq('id',item.id).select('id');
+      if(error)throw error;
+      if(!data||!data.length)throw new Error('Product update ki ijazat nahi mili (RLS policy)');
+      products[item.id].product_image=url;ok++;
+      results.push(`✓ ${item.name} (${Math.round(blob.size/1024)} KB)`);
+    }catch(e){
+      results.push(`✗ ${item.name}: ${e.message||e}`);
+    }
+  }
+  const failed=list.length-ok;
+  let msg=`${ok} images save ho gayin${failed?`, ${failed} fail`:''}.\n\n`+results.join('\n');
+  if(failed&&/policy|row-level|security|permission|ijazat/i.test(results.join(' '))){
+    msg+=`\n\nSupabase ne ijazat nahi di. Supabase > SQL Editor mein ye chala dein, phir dobara Save karein:\n\n`+
+`create policy "Admin uploads product images" on storage.objects for insert to authenticated
+with check (bucket_id = '${BUCKET}' and auth.jwt()->>'email' = '${ADMIN}');
+
+create policy "Admin updates products" on public.products for update to authenticated
+using (auth.jwt()->>'email' = '${ADMIN}') with check (auth.jwt()->>'email' = '${ADMIN}');`;
+  }
+  setStatus(msg,failed?'err':'ok');
+  picks={};gridImage=null;$('gridFile').value='';
+  renderTiles();renderBatchButtons();
+}
+
+$('copyPrompt').onclick=async()=>{
+  try{await navigator.clipboard.writeText($('promptText').value);$('copyPrompt').textContent='✓ Copied';}
+  catch(e){$('promptText').select();document.execCommand('copy');$('copyPrompt').textContent='✓ Copied';}
+  setTimeout(()=>$('copyPrompt').textContent='📋 Copy Prompt',1800);
+};
+$('gridFile').onchange=async()=>{
+  const f=$('gridFile').files[0];if(!f)return;
+  try{gridImage=await loadImageFile(f);Object.keys(picks).forEach(k=>{if(picks[k].source==='grid')delete picks[k]});rebuildGridPicks();renderTiles();$('status').classList.add('hidden')}
+  catch(e){alert(e.message)}
+};
+$('trim').oninput=()=>{$('trimValue').textContent=$('trim').value+'%';rebuildGridPicks();renderTiles()};
+$('saveBtn').onclick=saveImages;
+
+(async()=>{if(await protect())loadProducts()})();
+</script>
+</body>
+</html>
