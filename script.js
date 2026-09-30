@@ -799,6 +799,25 @@ function resetCheckoutView() {
     }
 
 
+    // Map sirf tab dikhayein jab location pehle se mil chuki ho
+
+    const locationMapWrap =
+        document.getElementById("locationMapWrap");
+
+    if (locationMapWrap) {
+
+        locationMapWrap.style.display =
+            locationMap ? "block" : "none";
+    }
+
+    if (locationMap) {
+
+        setTimeout(() => {
+            locationMap.invalidateSize();
+        }, 350);
+    }
+
+
     if (orderSummaryStep) {
 
         orderSummaryStep.classList.remove(
@@ -919,175 +938,353 @@ function calculateDeliveryCharge(distanceKm) {
 
 
 // =========================
-// CURRENT LOCATION
+// CURRENT LOCATION (EXACT HOME PIN)
 // =========================
+
+// GPS kuch seconds tak sunte hain aur sab se accurate reading lete hain.
+// Phir customer map par pin ko apne ghar par drag / tap kar ke theek kar sakta hai.
+
+const GPS_GOOD_ACCURACY_METERS = 20;
+const GPS_MAX_WAIT_MS = 15000;
+
+let locationMap = null;
+let locationMarker = null;
+let locationAccuracyCircle = null;
+
+
+function setLocationStatus(text) {
+
+    if (locationStatus) {
+        locationStatus.textContent = text;
+    }
+}
+
+
+function setCustomerLocation(latitude, longitude) {
+
+    customerLatitude = latitude;
+    customerLongitude = longitude;
+
+    customerDistanceKm =
+        calculateDistanceKm(
+            SHOP_LATITUDE,
+            SHOP_LONGITUDE,
+            latitude,
+            longitude
+        );
+
+    calculatedDeliveryCharge =
+        calculateDeliveryCharge(
+            customerDistanceKm
+        );
+}
+
+
+// Watch GPS until accuracy is good enough or time runs out,
+// and keep the most accurate reading.
+
+function getBestGpsPosition(onProgress) {
+
+    return new Promise((resolve, reject) => {
+
+        let best = null;
+        let lastError = null;
+        let done = false;
+        let watchId = null;
+        let timer = null;
+
+        const finish = () => {
+
+            if (done) {
+                return;
+            }
+
+            done = true;
+
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+            }
+
+            clearTimeout(timer);
+
+            if (best) {
+                resolve(best);
+            } else {
+                reject(lastError || { code: 3 });
+            }
+        };
+
+        watchId = navigator.geolocation.watchPosition(
+
+            (position) => {
+
+                if (
+                    !best ||
+                    position.coords.accuracy < best.coords.accuracy
+                ) {
+                    best = position;
+                    onProgress(position.coords.accuracy);
+                }
+
+                if (best.coords.accuracy <= GPS_GOOD_ACCURACY_METERS) {
+                    finish();
+                }
+            },
+
+            (error) => {
+
+                lastError = error;
+
+                // Permission denied ho to intezar ka faida nahi
+                if (error.code === 1) {
+                    finish();
+                }
+            },
+
+            {
+                enableHighAccuracy: true,
+                timeout: GPS_MAX_WAIT_MS,
+                maximumAge: 0
+            }
+        );
+
+        timer = setTimeout(finish, GPS_MAX_WAIT_MS);
+    });
+}
+
+
+// Area / Sector aur (agar khali ho) address auto fill
+
+async function fillAreaFromLocation(latitude, longitude) {
+
+    try {
+
+        const response =
+            await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=en&zoom=18&lat=${latitude}&lon=${longitude}`
+            );
+
+        if (!response.ok) {
+            return;
+        }
+
+        const data = await response.json();
+        const address = data.address || {};
+
+        const area =
+            address.suburb ||
+            address.neighbourhood ||
+            address.quarter ||
+            address.city_district ||
+            address.town ||
+            address.city ||
+            address.village ||
+            "";
+
+        if (area && customerAreaInput) {
+            customerAreaInput.value = area;
+        }
+
+        const addressInput =
+            document.getElementById("customerAddress");
+
+        // Customer ka apna likha hua address kabhi overwrite nahi karte
+        if (
+            addressInput &&
+            data.display_name &&
+            (
+                !addressInput.value.trim() ||
+                addressInput.value === addressInput.dataset.autoAddress
+            )
+        ) {
+            addressInput.value = data.display_name;
+            addressInput.dataset.autoAddress = data.display_name;
+        }
+
+    } catch (error) {
+
+        console.warn("Reverse geocode failed:", error);
+    }
+}
+
+
+function onPinMoved(latitude, longitude) {
+
+    setCustomerLocation(latitude, longitude);
+
+    if (locationAccuracyCircle) {
+        locationAccuracyCircle.remove();
+        locationAccuracyCircle = null;
+    }
+
+    setLocationStatus(
+        "✓ Pin set on your house. Delivery will come to this exact point."
+    );
+
+    fillAreaFromLocation(latitude, longitude);
+}
+
+
+function showLocationMap(latitude, longitude, accuracy) {
+
+    const mapWrap =
+        document.getElementById("locationMapWrap");
+
+    if (!mapWrap || typeof L === "undefined") {
+        return;
+    }
+
+    mapWrap.style.display = "block";
+
+    if (!locationMap) {
+
+        const satellite =
+            L.tileLayer(
+                "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                {
+                    maxZoom: 20,
+                    maxNativeZoom: 18,
+                    attribution: "Imagery © Esri"
+                }
+            );
+
+        const streets =
+            L.tileLayer(
+                "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+                    maxZoom: 20,
+                    maxNativeZoom: 19,
+                    attribution: "© OpenStreetMap"
+                }
+            );
+
+        locationMap =
+            L.map("locationMap", {
+                layers: [satellite]
+            });
+
+        L.control
+            .layers({
+                "Satellite": satellite,
+                "Map": streets
+            })
+            .addTo(locationMap);
+
+        locationMarker =
+            L.marker(
+                [latitude, longitude],
+                { draggable: true }
+            ).addTo(locationMap);
+
+        locationMarker.on("dragend", () => {
+
+            const point = locationMarker.getLatLng();
+
+            onPinMoved(point.lat, point.lng);
+        });
+
+        locationMap.on("click", (event) => {
+
+            locationMarker.setLatLng(event.latlng);
+
+            onPinMoved(event.latlng.lat, event.latlng.lng);
+        });
+    }
+
+    locationMarker.setLatLng([latitude, longitude]);
+
+    if (locationAccuracyCircle) {
+        locationAccuracyCircle.remove();
+        locationAccuracyCircle = null;
+    }
+
+    if (accuracy) {
+
+        locationAccuracyCircle =
+            L.circle(
+                [latitude, longitude],
+                {
+                    radius: accuracy,
+                    color: "#126b35",
+                    weight: 1,
+                    fillOpacity: 0.08,
+                    interactive: false
+                }
+            ).addTo(locationMap);
+    }
+
+    locationMap.setView([latitude, longitude], 18);
+
+    setTimeout(() => {
+        locationMap.invalidateSize();
+    }, 200);
+}
+
 
 if (useCurrentLocationBtn) {
 
     useCurrentLocationBtn.addEventListener(
         "click",
-        () => {
+        async () => {
 
             if (!navigator.geolocation) {
 
-                if (locationStatus) {
-
-                    locationStatus.textContent =
-                        "Location is not supported on this device.";
-                }
+                setLocationStatus(
+                    "Location is not supported on this device."
+                );
 
                 return;
             }
 
+            useCurrentLocationBtn.disabled = true;
+            useCurrentLocationBtn.textContent =
+                "Finding Exact Location...";
 
-            if (locationStatus) {
-
-                locationStatus.textContent =
-                    "Getting your location...";
-            }
-
-
-            navigator.geolocation.getCurrentPosition(
-
-                async (position) => {
-
-                    customerLatitude =
-                        position.coords.latitude;
-
-
-                    customerLongitude =
-                        position.coords.longitude;
-
-
-                    // Shop se customer tak distance
-
-                    customerDistanceKm =
-                        calculateDistanceKm(
-
-                            SHOP_LATITUDE,
-                            SHOP_LONGITUDE,
-
-                            customerLatitude,
-                            customerLongitude
-                        );
-
-
-                    // Delivery charge calculate
-
-                    calculatedDeliveryCharge =
-                        calculateDeliveryCharge(
-                            customerDistanceKm
-                        );
-
-
-                    if (locationStatus) {
-
-                        locationStatus.textContent =
-                            "✓ Location captured successfully";
-                    }
-
-
-                    // =========================
-                    // AREA / SECTOR DETECTION
-                    // =========================
-
-                    try {
-
-                        const response =
-                            await fetch(
-
-                                `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${customerLatitude}&lon=${customerLongitude}`
-                            );
-
-
-                        if (!response.ok) {
-
-                            throw new Error(
-                                "Location service error"
-                            );
-                        }
-
-
-                        const data =
-                            await response.json();
-
-
-                        const address =
-                            data.address || {};
-
-
-                        const area =
-
-                            address.suburb ||
-
-                            address.neighbourhood ||
-
-                            address.quarter ||
-
-                            address.city_district ||
-
-                            address.town ||
-
-                            address.city ||
-
-                            address.village ||
-
-                            "";
-
-
-                        if (
-                            area &&
-                            customerAreaInput
-                        ) {
-
-                            customerAreaInput.value =
-                                area;
-
-
-                            if (locationStatus) {
-
-                                locationStatus.textContent =
-                                    "✓ Location & area detected successfully";
-                            }
-
-                        } else {
-
-                            if (locationStatus) {
-
-                                locationStatus.textContent =
-                                    "✓ Location captured — please enter Area / Sector";
-                            }
-                        }
-
-
-                    } catch (error) {
-
-
-                        if (locationStatus) {
-
-                            locationStatus.textContent =
-                                "✓ Location captured — please enter Area / Sector";
-                        }
-                    }
-                },
-
-
-                () => {
-
-                    if (locationStatus) {
-
-                        locationStatus.textContent =
-                            "Unable to get location. Please allow location permission.";
-                    }
-                },
-
-
-                {
-                    enableHighAccuracy: true,
-                    timeout: 15000,
-                    maximumAge: 0
-                }
+            setLocationStatus(
+                "Getting your exact GPS location... please wait a few seconds."
             );
+
+            try {
+
+                const position =
+                    await getBestGpsPosition((accuracy) => {
+
+                        setLocationStatus(
+                            `Improving accuracy... ±${Math.round(accuracy)} m`
+                        );
+                    });
+
+                const { latitude, longitude, accuracy } =
+                    position.coords;
+
+                setCustomerLocation(latitude, longitude);
+
+                showLocationMap(latitude, longitude, accuracy);
+
+                setLocationStatus(
+                    `✓ Location found (±${Math.round(accuracy)} m). If the pin is not exactly on your house, drag it or tap your house on the map.`
+                );
+
+                useCurrentLocationBtn.textContent =
+                    "Location Captured ✓ (Tap to Retry)";
+
+                fillAreaFromLocation(latitude, longitude);
+
+            } catch (error) {
+
+                useCurrentLocationBtn.textContent =
+                    "Use Current Location";
+
+                setLocationStatus(
+                    error && error.code === 1
+                        ? "Location permission blocked. Please allow location for this site and try again."
+                        : "Could not get GPS location. Turn on phone Location/GPS and try again."
+                );
+
+            } finally {
+
+                useCurrentLocationBtn.disabled = false;
+            }
         }
     );
 }
@@ -1229,7 +1426,7 @@ document.addEventListener(
 
         document
             .querySelectorAll(
-                "#customerName, #customerPhone, #customerArea, #customerAddress, #continueCheckout, .location-buttons, #locationStatus"
+                "#customerName, #customerPhone, #customerArea, #customerAddress, #continueCheckout, .location-buttons, #locationStatus, #locationMapWrap"
             )
             .forEach((element) => {
 
@@ -2164,7 +2361,7 @@ function restorePendingOrderCart() {
 
         Object.assign(cart, restoredCart);
 
-        updateCart();
+        renderCart();
         const savedDetails =
     localStorage.getItem("pendingCheckoutDetails");
 
@@ -2185,17 +2382,27 @@ if (savedDetails) {
     document.getElementById("customerAddress").value =
         details.address || "";
 
-    customerLatitude =
-        details.latitude || null;
+    if (
+        Number.isFinite(details.latitude) &&
+        Number.isFinite(details.longitude)
+    ) {
 
-    customerLongitude =
-        details.longitude || null;
+        setCustomerLocation(
+            details.latitude,
+            details.longitude
+        );
 
-    currentDistanceKm =
-        details.distanceKm || 0;
+        setLocationStatus(
+            "✓ Saved location restored. Drag the pin if it is not on your house."
+        );
 
-    calculatedDeliveryCharge =
-        details.deliveryCharge || 0;
+        setTimeout(() => {
+            showLocationMap(
+                details.latitude,
+                details.longitude
+            );
+        }, 400);
+    }
 }
 
 setTimeout(() => {
