@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Apna Bazaar - Local Delivery Test</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20260930-1">
 <style>
 @media (max-width:600px){
   .cart-panel{height:100dvh;max-height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(18px + env(safe-area-inset-bottom));}
@@ -30,6 +30,6 @@
 <div class="checkout-panel" id="checkoutPanel"><div class="checkout-header"><h2>Checkout</h2><button id="closeCheckout">×</button></div><div class="checkout-content"><h3>Delivery Details</h3><div class="checkout-form"><input type="text" id="customerName" placeholder="Full Name"><input type="tel" id="customerPhone" placeholder="Phone Number"><input type="text" id="customerArea" placeholder="Area / Sector"><div class="location-buttons"><button type="button" id="useCurrentLocation">Use Current Location</button></div><p class="location-status" id="locationStatus">Location not selected</p><div class="location-map-wrap" id="locationMapWrap" style="display:none;"><div id="locationMap" class="location-map"></div><p class="location-map-hint">📍 Drag the pin or tap on your house to set the exact delivery point.</p></div><textarea id="customerAddress" placeholder="Complete Delivery Address" rows="4"></textarea></div></div><button type="button" id="continueCheckout" class="continue-checkout-btn">Continue</button><div class="order-summary-step" id="orderSummaryStep"><h3>Order Summary</h3><div id="checkoutItems"></div><div class="checkout-price-row"><span>Subtotal</span><strong>Rs. <span id="checkoutSubtotal">0</span></strong></div><div class="checkout-price-row"><span>Delivery Charges</span><strong>Rs. <span id="deliveryCharges">0</span></strong></div><div class="checkout-price-row grand-total"><span>Grand Total</span><strong>Rs. <span id="grandTotal">0</span></strong></div><div class="payment-method"><h3>Payment Method</h3><div class="payment-options"><label class="payment-card cod"><input type="radio" name="paymentMethod" value="Cash on Delivery" checked><span class="payment-icon">💵</span><span class="payment-copy"><strong>Cash on Delivery</strong><small>Pay when your order arrives</small></span><span class="payment-check"></span></label><label class="payment-card online-payment-hidden"><input type="radio" name="paymentMethod" value="JazzCash"><span class="payment-icon">📱</span><span class="payment-copy"><strong>JazzCash</strong><small>Pay securely with JazzCash</small></span><span class="payment-check"></span></label><label class="payment-card online-payment-hidden"><input type="radio" name="paymentMethod" value="EasyPaisa"><span class="payment-icon">💳</span><span class="payment-copy"><strong>Easypaisa</strong><small>Pay securely with Easypaisa</small></span><span class="payment-check"></span></label></div></div><button type="button" id="placeOrderBtn" class="place-order-btn">Place Order</button></div></div><div class="checkout-overlay" id="checkoutOverlay"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="script.js"></script>
-<script src="checkout-location-fix.js"></script>
+<script src="script.js?v=20260930-1"></script>
+<script src="checkout-location-fix.js?v=20260930-1"></script>
 </body></html>
