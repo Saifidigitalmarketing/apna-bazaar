@@ -2190,7 +2190,6 @@ body {
 }
 
 .map-recenter-btn {
-    display: none !important;
     position: absolute;
     right: 10px;
     bottom: 112px;
@@ -2252,10 +2251,6 @@ body {
     outline-offset: -3px;
 }
 
-.location-map-box.is-editing .map-recenter-btn {
-    display: flex !important;
-}
-
 .map-edit-btn {
     position: absolute;
     left: 10px;
@@ -2275,4 +2270,10 @@ body {
 
 .location-map-box.is-editing .map-edit-btn {
     background: #126b35;
+}
+
+.location-pin-icon {
+    background: none;
+    border: none;
+    filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35));
 }

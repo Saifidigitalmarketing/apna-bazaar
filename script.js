@@ -949,19 +949,11 @@ const GPS_MAX_WAIT_MS = 15000;
 
 let locationMap = null;
 let locationMapLayers = null;
+let locationMarker = null;
 
-// Pin by default LOCKED rehta hai: map chhoone / page scroll karne se location nahi badalti.
-// Sirf "Adjust Pin" dabane par map khiska kar location badli ja sakti hai.
+// Adjust Pin mode on ho to hi location badalti hai
 let locationEditMode = false;
 
-const MAP_INTERACTIONS = [
-    "dragging",
-    "touchZoom",
-    "doubleClickZoom",
-    "scrollWheelZoom",
-    "boxZoom",
-    "keyboard"
-];
 let reverseGeocodeTimer = null;
 
 let gpsLatitude = null;
@@ -1199,7 +1191,7 @@ function onPinMoved(latitude, longitude) {
         "warning"
     );
 
-    // Nominatim par har pixel move par request na jaye
+    // Nominatim par har chhoti move par request na jaye
     clearTimeout(reverseGeocodeTimer);
 
     reverseGeocodeTimer =
@@ -1209,34 +1201,20 @@ function onPinMoved(latitude, longitude) {
 }
 
 
+// Adjust mode: pin drag / map par tap se location badalti hai.
+// Normal mode: map jahan marzi le jayein, pin ghar ki location par hi rehta hai.
+
 function setLocationEditMode(on) {
 
     locationEditMode = on;
 
-    if (!locationMap) {
-        return;
-    }
+    if (locationMarker && locationMarker.dragging) {
 
-    MAP_INTERACTIONS.forEach((name) => {
-
-        if (locationMap[name]) {
-
-            if (on) {
-                locationMap[name].enable();
-            } else {
-                locationMap[name].disable();
-            }
+        if (on) {
+            locationMarker.dragging.enable();
+        } else {
+            locationMarker.dragging.disable();
         }
-    });
-
-    // Lock hote hi map wapas saved location par
-    if (!on && customerLatitude !== null) {
-
-        locationMap.setView(
-            [customerLatitude, customerLongitude],
-            locationMap.getZoom(),
-            { animate: false }
-        );
     }
 
     const mapBox =
@@ -1260,8 +1238,8 @@ function setLocationEditMode(on) {
     if (hint) {
         hint.textContent =
             on
-                ? "Move the map so the pin is exactly on your house, then tap Confirm Location."
-                : "🔒 Pin is locked on this location. Tap Adjust Pin to change it.";
+                ? "Drag the pin, or tap your house on the map, then tap Confirm Location."
+                : "Move and zoom the map freely — the pin stays on your location. Tap Adjust Pin to change it.";
     }
 }
 
@@ -1331,36 +1309,39 @@ function createLocationMap(latitude, longitude) {
         .zoom({ position: "bottomright" })
         .addTo(locationMap);
 
-    // Pin map ke upar fixed hai — sirf map khiskta hai, pin nahi
-    locationMap.on("moveend", () => {
+    // Pin map par ghar ki location se jura hua hai (map ke saath chalta hai, jagah nahi badalta)
+    locationMarker =
+        L.marker(
+            [latitude, longitude],
+            {
+                icon: L.divIcon({
+                    className: "location-pin-icon",
+                    html: '<svg viewBox="0 0 40 52" width="38" height="50"><path d="M20 1C9.5 1 1 9.4 1 19.8 1 33.5 20 51 20 51s19-17.5 19-31.2C39 9.4 30.5 1 20 1z" fill="#ff6500" stroke="#ffffff" stroke-width="2"/><circle cx="20" cy="19" r="7" fill="#ffffff"/></svg>',
+                    iconSize: [38, 50],
+                    iconAnchor: [19, 50]
+                }),
+                draggable: true,
+                autoPan: true
+            }
+        ).addTo(locationMap);
 
-        // Locked ho to location kabhi nahi badalti
+    locationMarker.on("dragend", () => {
+
+        const point = locationMarker.getLatLng();
+
+        onPinMoved(point.lat, point.lng);
+    });
+
+    // Sirf Adjust mode mein: map par tap → pin wahan
+    locationMap.on("click", (event) => {
+
         if (!locationEditMode) {
             return;
         }
 
-        const center = locationMap.getCenter();
+        locationMarker.setLatLng(event.latlng);
 
-        // Sirf customer ke khiskane par update (zoom / resize par nahi)
-        if (
-            customerLatitude !== null &&
-            locationMap.distance(
-                center,
-                [customerLatitude, customerLongitude]
-            ) < 1
-        ) {
-            return;
-        }
-
-        onPinMoved(center.lat, center.lng);
-    });
-
-    // Map par tap → wo jagah pin ke neeche aa jaye
-    locationMap.on("click", (event) => {
-
-        if (locationEditMode) {
-            locationMap.panTo(event.latlng);
-        }
+        onPinMoved(event.latlng.lat, event.latlng.lng);
     });
 
     const editButton =
@@ -1375,7 +1356,7 @@ function createLocationMap(latitude, longitude) {
                 setLocationEditMode(false);
 
                 setLocationStatus(
-                    "✓ Location confirmed and locked. We will deliver to this exact point.",
+                    "✓ Location confirmed. We will deliver to this exact point.",
                     "success"
                 );
 
@@ -1384,7 +1365,7 @@ function createLocationMap(latitude, longitude) {
                 setLocationEditMode(true);
 
                 setLocationStatus(
-                    "Adjust mode: move the map so the pin is on your house.",
+                    "Adjust mode: drag the pin or tap your house on the map.",
                     "warning"
                 );
             }
@@ -1399,6 +1380,7 @@ function createLocationMap(latitude, longitude) {
             });
         });
 
+    // Map door chala jaye to wapas pin par
     const recenterButton =
         document.getElementById("mapRecenter");
 
@@ -1406,16 +1388,12 @@ function createLocationMap(latitude, longitude) {
 
         recenterButton.addEventListener("click", () => {
 
-            if (gpsLatitude === null) {
-                return;
+            if (customerLatitude !== null) {
+                locationMap.setView(
+                    [customerLatitude, customerLongitude],
+                    Math.max(locationMap.getZoom(), 17)
+                );
             }
-
-            showLocationMap(gpsLatitude, gpsLongitude, gpsAccuracy);
-
-            setLocationStatus(
-                "Back to your GPS location. Move the map if the pin is not on your house.",
-                "warning"
-            );
         });
     }
 
@@ -1434,12 +1412,12 @@ function showLocationMap(latitude, longitude, accuracy) {
 
     mapWrap.style.display = "block";
 
-    // Pehle location set, phir map move — taake moveend isay "customer move" na samjhe
     setCustomerLocation(latitude, longitude);
 
     if (!locationMap) {
         createLocationMap(latitude, longitude);
     } else {
+        locationMarker.setLatLng([latitude, longitude]);
         locationMap.setView([latitude, longitude], 18);
     }
 
@@ -1509,7 +1487,7 @@ if (useCurrentLocationBtn) {
                 if (accuracy <= 50) {
 
                     setLocationStatus(
-                        "Location found and locked. If the pin is not on your house, tap Adjust Pin.",
+                        "Location found. If the pin is not exactly on your house, tap Adjust Pin.",
                         "success"
                     );
 
@@ -2649,7 +2627,7 @@ if (savedDetails) {
         );
 
         setLocationStatus(
-            "Saved location restored and locked. Tap Adjust Pin to change it.",
+            "Saved location restored. Tap Adjust Pin to change it.",
             "success"
         );
 
