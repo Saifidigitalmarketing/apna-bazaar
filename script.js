@@ -2176,7 +2176,7 @@ if (checkOrderStatusButton) {
                 console.error("Track Order Error:", error);
 
                 trackingResult.innerHTML =
-                    "❌ Order not found. Please check your Order ID.";
+                    "❌ Order not found. Order ID check karein, aur usi account se login karein jis se order kiya tha.";
 
                 return;
             }
@@ -2470,7 +2470,7 @@ async function checkOrderNow() {
 
     if (error || !data) {
         trackingResult.innerHTML =
-            "❌ Order not found.";
+            "❌ Order not found. Usi account se login karein jis se order kiya tha.";
         return;
     }
 
