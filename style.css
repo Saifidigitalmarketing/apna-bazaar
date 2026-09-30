@@ -1985,46 +1985,266 @@ body {
    CHECKOUT EXACT LOCATION
 ========================= */
 
-.location-buttons button {
-    width: 100%;
-    padding: 13px 15px;
-    border: 1.5px solid #126b35;
-    border-radius: 10px;
-    background: #eef8f1;
+.location-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid #e3ebe5;
+    border-radius: 14px;
+    background: #fbfdfb;
+}
+
+.location-card-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.location-card-icon {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #e6f4ea;
     color: #126b35;
+}
+
+.location-card-head strong {
+    display: block;
+    font-size: 16px;
+    color: #1f2a22;
+}
+
+.location-card-head small {
+    display: block;
+    margin-top: 2px;
+    font-size: 13px;
+    line-height: 1.35;
+    color: #6b746e;
+}
+
+.location-buttons button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 15px;
+    border: none;
+    border-radius: 12px;
+    background: #126b35;
+    color: #ffffff;
     font-size: 15px;
     font-weight: 700;
     font-family: inherit;
     cursor: pointer;
+    box-shadow: 0 4px 12px rgba(18, 107, 53, 0.22);
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.location-buttons button:hover {
+    background: #0e5a2c;
+}
+
+.location-buttons button:active {
+    transform: scale(0.98);
 }
 
 .location-buttons button:disabled {
-    opacity: 0.7;
     cursor: wait;
+    opacity: 0.85;
+}
+
+.location-buttons button.is-loading .location-btn-icon {
+    animation: locationSpin 1s linear infinite;
+}
+
+@keyframes locationSpin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .location-status {
     margin: 0;
-    font-size: 14px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f1f3f2;
+    color: #5b635e;
+    font-size: 13.5px;
     line-height: 1.45;
-    color: #333333;
+}
+
+.location-status.is-loading {
+    background: #fff6ec;
+    color: #9a4a00;
+}
+
+.location-status.is-success {
+    background: #e8f6ed;
+    color: #126b35;
+}
+
+.location-status.is-warning {
+    background: #fff4e0;
+    color: #8a5a00;
+}
+
+.location-status.is-error {
+    background: #fdecec;
+    color: #b42318;
 }
 
 .location-map-wrap {
     width: 100%;
 }
 
+.location-map-box {
+    position: relative;
+    width: 100%;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid #dfe5e1;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
 .location-map {
     width: 100%;
-    height: 260px;
-    border-radius: 12px;
-    border: 1px solid #dddddd;
+    height: 280px;
+    background: #e9eeea;
+}
+
+.map-center-pin {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 1000;
+    transform: translate(-50%, -100%);
+    pointer-events: none;
+    filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35));
+    transition: transform 0.15s ease;
+}
+
+.map-center-pin svg {
+    display: block;
+}
+
+.map-center-shadow {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 999;
+    width: 12px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.35);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.location-map-box.is-moving .map-center-pin {
+    transform: translate(-50%, calc(-100% - 10px));
+}
+
+.map-layer-toggle {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1000;
+    display: flex;
+    padding: 3px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.map-layer-toggle button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #44504a;
+    font-size: 12.5px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.map-layer-toggle button.active {
+    background: #126b35;
+    color: #ffffff;
+}
+
+.map-accuracy {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #126b35;
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.map-recenter-btn {
+    position: absolute;
+    right: 10px;
+    bottom: 112px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #126b35;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+}
+
+.location-map-box .leaflet-bar {
+    border: none;
+    border-radius: 10px;
     overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+}
+
+.location-map-box .leaflet-bar a {
+    width: 40px;
+    height: 36px;
+    line-height: 36px;
+    color: #126b35;
+}
+
+.location-map-box .leaflet-control-attribution {
+    font-size: 10px;
+    background: rgba(255, 255, 255, 0.75);
 }
 
 .location-map-hint {
-    margin: 8px 0 0;
-    font-size: 13px;
-    color: #126b35;
-    font-weight: 600;
+    margin: 9px 2px 0;
+    font-size: 12.5px;
+    color: #6b746e;
+    text-align: center;
+}
+
+@media (max-width: 600px) {
+
+    .location-card {
+        padding: 14px;
+    }
+
+    .location-map {
+        height: 260px;
+    }
 }

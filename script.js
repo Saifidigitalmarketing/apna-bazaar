@@ -777,7 +777,7 @@ function resetCheckoutView() {
 
     const formElements =
         document.querySelectorAll(
-            "#customerName, #customerPhone, #customerArea, #customerAddress, #continueCheckout, .location-buttons, #locationStatus"
+            "#customerName, #customerPhone, #customerArea, #customerAddress, #continueCheckout, .location-card"
         );
 
 
@@ -942,21 +942,44 @@ function calculateDeliveryCharge(distanceKm) {
 // =========================
 
 // GPS kuch seconds tak sunte hain aur sab se accurate reading lete hain.
-// Phir customer map par pin ko apne ghar par drag / tap kar ke theek kar sakta hai.
+// Pin map ke beech mein fixed hai — customer map khiska kar pin ko apne ghar par rakhta hai.
 
 const GPS_GOOD_ACCURACY_METERS = 20;
 const GPS_MAX_WAIT_MS = 15000;
 
 let locationMap = null;
-let locationMarker = null;
+let locationMapLayers = null;
 let locationAccuracyCircle = null;
+let reverseGeocodeTimer = null;
+
+let gpsLatitude = null;
+let gpsLongitude = null;
+let gpsAccuracy = null;
 
 
-function setLocationStatus(text) {
+function setLocationStatus(text, state = "") {
 
-    if (locationStatus) {
-        locationStatus.textContent = text;
+    if (!locationStatus) {
+        return;
     }
+
+    locationStatus.textContent = text;
+
+    locationStatus.className =
+        "location-status" + (state ? " is-" + state : "");
+}
+
+
+function setLocationButtonText(text) {
+
+    if (!useCurrentLocationBtn) {
+        return;
+    }
+
+    const label =
+        useCurrentLocationBtn.querySelector(".location-btn-label");
+
+    (label || useCurrentLocationBtn).textContent = text;
 }
 
 
@@ -983,7 +1006,7 @@ function setCustomerLocation(latitude, longitude) {
 // Watch GPS until accuracy is good enough or time runs out,
 // and keep the most accurate reading.
 
-function getBestGpsPosition(onProgress) {
+function watchBestGpsPosition(onProgress) {
 
     return new Promise((resolve, reject) => {
 
@@ -1053,6 +1076,37 @@ function getBestGpsPosition(onProgress) {
 }
 
 
+// Kuch phones (ghar ke andar) exact GPS nahi de pate —
+// tab network location le lete hain, customer pin khud theek kar lega.
+
+async function getCustomerGpsPosition(onProgress) {
+
+    try {
+
+        return await watchBestGpsPosition(onProgress);
+
+    } catch (error) {
+
+        if (error && error.code === 1) {
+            throw error;
+        }
+
+        return new Promise((resolve, reject) => {
+
+            navigator.geolocation.getCurrentPosition(
+                resolve,
+                reject,
+                {
+                    enableHighAccuracy: false,
+                    timeout: 10000,
+                    maximumAge: 120000
+                }
+            );
+        });
+    }
+}
+
+
 // Area / Sector aur (agar khali ho) address auto fill
 
 async function fillAreaFromLocation(latitude, longitude) {
@@ -1108,20 +1162,181 @@ async function fillAreaFromLocation(latitude, longitude) {
 }
 
 
-function onPinMoved(latitude, longitude) {
+function setMapAccuracyBadge(text) {
 
-    setCustomerLocation(latitude, longitude);
+    const badge =
+        document.getElementById("mapAccuracy");
+
+    if (!badge) {
+        return;
+    }
+
+    badge.textContent = text;
+    badge.style.display = text ? "" : "none";
+}
+
+
+function removeAccuracyCircle() {
 
     if (locationAccuracyCircle) {
         locationAccuracyCircle.remove();
         locationAccuracyCircle = null;
     }
+}
+
+
+function onPinMoved(latitude, longitude) {
+
+    setCustomerLocation(latitude, longitude);
+
+    removeAccuracyCircle();
+
+    setMapAccuracyBadge("Pin set manually");
 
     setLocationStatus(
-        "✓ Pin set on your house. Delivery will come to this exact point."
+        "Pin set on your house. We will deliver to this exact point.",
+        "success"
     );
 
-    fillAreaFromLocation(latitude, longitude);
+    // Nominatim par har pixel move par request na jaye
+    clearTimeout(reverseGeocodeTimer);
+
+    reverseGeocodeTimer =
+        setTimeout(() => {
+            fillAreaFromLocation(latitude, longitude);
+        }, 800);
+}
+
+
+function setMapLayer(name) {
+
+    if (!locationMap || !locationMapLayers) {
+        return;
+    }
+
+    Object.entries(locationMapLayers).forEach(([key, layer]) => {
+
+        if (key === name) {
+            layer.addTo(locationMap);
+        } else {
+            layer.remove();
+        }
+    });
+
+    document
+        .querySelectorAll(".map-layer-toggle button")
+        .forEach((button) => {
+            button.classList.toggle(
+                "active",
+                button.dataset.layer === name
+            );
+        });
+}
+
+
+function createLocationMap(latitude, longitude) {
+
+    const mapBox =
+        document.querySelector(".location-map-box");
+
+    locationMapLayers = {
+
+        satellite:
+            L.tileLayer(
+                "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                {
+                    maxZoom: 20,
+                    maxNativeZoom: 18,
+                    attribution: "Imagery © Esri"
+                }
+            ),
+
+        streets:
+            L.tileLayer(
+                "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+                    maxZoom: 20,
+                    maxNativeZoom: 19,
+                    attribution: "© OpenStreetMap"
+                }
+            )
+    };
+
+    locationMap =
+        L.map("locationMap", {
+            center: [latitude, longitude],
+            zoom: 18,
+            zoomControl: false,
+            layers: [locationMapLayers.satellite]
+        });
+
+    locationMap.attributionControl.setPrefix(false);
+
+    L.control
+        .zoom({ position: "bottomright" })
+        .addTo(locationMap);
+
+    locationMap.on("movestart", () => {
+
+        if (mapBox) {
+            mapBox.classList.add("is-moving");
+        }
+    });
+
+    locationMap.on("moveend", () => {
+
+        if (mapBox) {
+            mapBox.classList.remove("is-moving");
+        }
+
+        const center = locationMap.getCenter();
+
+        // Sirf customer ke khiskane par update (zoom / resize par nahi)
+        if (
+            customerLatitude !== null &&
+            locationMap.distance(
+                center,
+                [customerLatitude, customerLongitude]
+            ) < 1
+        ) {
+            return;
+        }
+
+        onPinMoved(center.lat, center.lng);
+    });
+
+    // Map par tap → wo jagah pin ke neeche aa jaye
+    locationMap.on("click", (event) => {
+        locationMap.panTo(event.latlng);
+    });
+
+    document
+        .querySelectorAll(".map-layer-toggle button")
+        .forEach((button) => {
+            button.addEventListener("click", () => {
+                setMapLayer(button.dataset.layer);
+            });
+        });
+
+    const recenterButton =
+        document.getElementById("mapRecenter");
+
+    if (recenterButton) {
+
+        recenterButton.addEventListener("click", () => {
+
+            if (gpsLatitude === null) {
+                return;
+            }
+
+            showLocationMap(gpsLatitude, gpsLongitude, gpsAccuracy);
+
+            setLocationStatus(
+                "Back to your GPS location. Move the map if the pin is not on your house.",
+                "success"
+            );
+        });
+    }
 }
 
 
@@ -1136,67 +1351,16 @@ function showLocationMap(latitude, longitude, accuracy) {
 
     mapWrap.style.display = "block";
 
+    // Pehle location set, phir map move — taake moveend isay "customer move" na samjhe
+    setCustomerLocation(latitude, longitude);
+
     if (!locationMap) {
-
-        const satellite =
-            L.tileLayer(
-                "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-                {
-                    maxZoom: 20,
-                    maxNativeZoom: 18,
-                    attribution: "Imagery © Esri"
-                }
-            );
-
-        const streets =
-            L.tileLayer(
-                "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                {
-                    maxZoom: 20,
-                    maxNativeZoom: 19,
-                    attribution: "© OpenStreetMap"
-                }
-            );
-
-        locationMap =
-            L.map("locationMap", {
-                layers: [satellite]
-            });
-
-        L.control
-            .layers({
-                "Satellite": satellite,
-                "Map": streets
-            })
-            .addTo(locationMap);
-
-        locationMarker =
-            L.marker(
-                [latitude, longitude],
-                { draggable: true }
-            ).addTo(locationMap);
-
-        locationMarker.on("dragend", () => {
-
-            const point = locationMarker.getLatLng();
-
-            onPinMoved(point.lat, point.lng);
-        });
-
-        locationMap.on("click", (event) => {
-
-            locationMarker.setLatLng(event.latlng);
-
-            onPinMoved(event.latlng.lat, event.latlng.lng);
-        });
+        createLocationMap(latitude, longitude);
+    } else {
+        locationMap.setView([latitude, longitude], 18);
     }
 
-    locationMarker.setLatLng([latitude, longitude]);
-
-    if (locationAccuracyCircle) {
-        locationAccuracyCircle.remove();
-        locationAccuracyCircle = null;
-    }
+    removeAccuracyCircle();
 
     if (accuracy) {
 
@@ -1207,13 +1371,18 @@ function showLocationMap(latitude, longitude, accuracy) {
                     radius: accuracy,
                     color: "#126b35",
                     weight: 1,
-                    fillOpacity: 0.08,
+                    fillColor: "#126b35",
+                    fillOpacity: 0.12,
                     interactive: false
                 }
             ).addTo(locationMap);
-    }
 
-    locationMap.setView([latitude, longitude], 18);
+        setMapAccuracyBadge(`GPS accuracy ±${Math.round(accuracy)} m`);
+
+    } else {
+
+        setMapAccuracyBadge("Saved location");
+    }
 
     setTimeout(() => {
         locationMap.invalidateSize();
@@ -1230,60 +1399,77 @@ if (useCurrentLocationBtn) {
             if (!navigator.geolocation) {
 
                 setLocationStatus(
-                    "Location is not supported on this device."
+                    "Location is not supported on this device.",
+                    "error"
                 );
 
                 return;
             }
 
             useCurrentLocationBtn.disabled = true;
-            useCurrentLocationBtn.textContent =
-                "Finding Exact Location...";
+            useCurrentLocationBtn.classList.add("is-loading");
+
+            setLocationButtonText("Finding your location...");
 
             setLocationStatus(
-                "Getting your exact GPS location... please wait a few seconds."
+                "Getting your exact GPS location. This can take a few seconds.",
+                "loading"
             );
 
             try {
 
                 const position =
-                    await getBestGpsPosition((accuracy) => {
+                    await getCustomerGpsPosition((accuracy) => {
 
                         setLocationStatus(
-                            `Improving accuracy... ±${Math.round(accuracy)} m`
+                            `Improving accuracy... ±${Math.round(accuracy)} m`,
+                            "loading"
                         );
                     });
 
                 const { latitude, longitude, accuracy } =
                     position.coords;
 
-                setCustomerLocation(latitude, longitude);
+                gpsLatitude = latitude;
+                gpsLongitude = longitude;
+                gpsAccuracy = accuracy;
 
                 showLocationMap(latitude, longitude, accuracy);
 
-                setLocationStatus(
-                    `✓ Location found (±${Math.round(accuracy)} m). If the pin is not exactly on your house, drag it or tap your house on the map.`
-                );
+                if (accuracy <= 50) {
 
-                useCurrentLocationBtn.textContent =
-                    "Location Captured ✓ (Tap to Retry)";
+                    setLocationStatus(
+                        "Location found. Check that the pin is on your house.",
+                        "success"
+                    );
+
+                } else {
+
+                    setLocationStatus(
+                        "Approximate location found. Move the map so the pin is exactly on your house.",
+                        "warning"
+                    );
+                }
+
+                setLocationButtonText("Update Location");
 
                 fillAreaFromLocation(latitude, longitude);
 
             } catch (error) {
 
-                useCurrentLocationBtn.textContent =
-                    "Use Current Location";
+                setLocationButtonText("Use Current Location");
 
                 setLocationStatus(
                     error && error.code === 1
-                        ? "Location permission blocked. Please allow location for this site and try again."
-                        : "Could not get GPS location. Turn on phone Location/GPS and try again."
+                        ? "Location permission is blocked. Please allow location for this site in your browser settings and try again."
+                        : "Could not get your location. Turn on phone Location / GPS and try again.",
+                    "error"
                 );
 
             } finally {
 
                 useCurrentLocationBtn.disabled = false;
+                useCurrentLocationBtn.classList.remove("is-loading");
             }
         }
     );
@@ -1426,7 +1612,7 @@ document.addEventListener(
 
         document
             .querySelectorAll(
-                "#customerName, #customerPhone, #customerArea, #customerAddress, #continueCheckout, .location-buttons, #locationStatus, #locationMapWrap"
+                "#customerName, #customerPhone, #customerArea, #customerAddress, #continueCheckout, .location-card"
             )
             .forEach((element) => {
 
@@ -2393,7 +2579,8 @@ if (savedDetails) {
         );
 
         setLocationStatus(
-            "✓ Saved location restored. Drag the pin if it is not on your house."
+            "Saved location restored. Move the map if the pin is not on your house.",
+            "success"
         );
 
         setTimeout(() => {

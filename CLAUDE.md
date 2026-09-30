@@ -18,6 +18,8 @@
 4. Merge ke baad agla kaam naye sire se latest `main` se shuru karein; merged PR dobara use na karein.
 
 ## Code notes
+- **Cache:** `index.html` mein `style.css`, `script.js`, `checkout-location-fix.js` ke saath `?v=...` laga hai.
+  In files mein koi bhi change ho to `index.html` mein `v` ka number badlein, warna phone purani file chalata rahega.
 - `script.js` aur `style.css` **CRLF** line endings use karte hain — edit ke baad CRLF hi rehne dein warna poori file diff mein aa jati hai.
 - Supabase: `products`, `orders`, `riders` tables, `rider-documents` storage bucket.
   Rider SQL: `rider-system-final.sql` (Supabase SQL Editor mein chalti hai; repo se apply nahi hoti).
