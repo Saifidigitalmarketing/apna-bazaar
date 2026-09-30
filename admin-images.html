@@ -54,8 +54,8 @@ textarea{width:100%;min-height:170px;border:1px solid #dfe5e1;border-radius:10px
 <h2>Kaise kaam karta hai</h2>
 <ol class="steps">
 <li>Neeche se <b>Batch</b> chunein (har batch = 9 products).</li>
-<li><b>Copy Prompt</b> dabayein, ChatGPT mein paste karein aur image banwa kar download kar lein.</li>
-<li><b>Grid Image Upload</b> se wo image yahan daalein. Page usay 9 hisson mein kaat kar har product ke saath dikhayega.</li>
+<li><b>Copy Prompt</b> dabayein aur ChatGPT ke naye chat mein paste karein. Har product ki alag image banegi — agli image ke liye sirf <b>next</b> likhein.</li>
+<li>9 images order se download karein, phir <b>9 Images Upload</b> se sab ek saath select karein. Page download ke order se har image sahi product par lagayega.</li>
 <li>Koi tile theek na ho to us product ka checkbox hata dein, ya <b>Single image</b> se alag image laga dein.</li>
 <li><b>Save Images</b> dabayein. Images chhoti ho kar Supabase mein save hongi aur website par lag jayengi.</li>
 </ol>
@@ -69,7 +69,7 @@ textarea{width:100%;min-height:170px;border:1px solid #dfe5e1;border-radius:10px
 
 <section class="box hidden" id="batchBox">
 <h2 id="batchTitle">Batch</h2>
-<p class="muted">Ye prompt ChatGPT mein paste karein. Aik hi image mein 9 products banenge.</p>
+<p class="muted">Ye prompt ChatGPT ke naye chat mein paste karein. Pehli image banegi; agli ke liye sirf <b>next</b> likhein.</p>
 <textarea id="promptText" readonly></textarea>
 <div class="row" style="margin-top:10px">
 <button class="btn orange" id="copyPrompt" type="button">📋 Copy Prompt</button>
@@ -77,8 +77,9 @@ textarea{width:100%;min-height:170px;border:1px solid #dfe5e1;border-radius:10px
 </div>
 
 <div class="row" style="margin-top:18px">
-<label class="file">⬆️ Grid Image Upload<input type="file" id="gridFile" accept="image/*"></label>
-<span class="trim">Kinare kaatein <input type="range" id="trim" min="0" max="8" step="0.5" value="2"> <b id="trimValue">2%</b></span>
+<label class="file">⬆️ 9 Images Upload<input type="file" id="multiFile" accept="image/*" multiple></label>
+<label class="file" style="background:#edf2ef;color:#333">Ya 3x3 grid image<input type="file" id="gridFile" accept="image/*"></label>
+<span class="trim hidden" id="trimWrap">Kinare kaatein <input type="range" id="trim" min="0" max="8" step="0.5" value="2"> <b id="trimValue">2%</b></span>
 </div>
 
 <div class="grid" id="tiles"></div>
@@ -92,7 +93,7 @@ textarea{width:100%;min-height:170px;border:1px solid #dfe5e1;border-radius:10px
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="product-image-batches.js?v=1"></script>
+<script src="product-image-batches.js?v=2"></script>
 <script>
 const U='https://sdycertdcrcxuygunlgf.supabase.co',K='sb_publishable_IwpL3sk7-mkC65RsO5IX0Q_yn7iMqSO',db=supabase.createClient(U,K),ADMIN='saifyounas112@gmail.com';
 const BUCKET='product-images';
@@ -131,7 +132,7 @@ function renderBatchButtons(){
 
 function openBatch(n){
   current=BATCHES.find(b=>b.batch===n);gridImage=null;picks={};
-  $('gridFile').value='';
+  $('gridFile').value='';$('multiFile').value='';$('trimWrap').classList.add('hidden');
   $('batchBox').classList.remove('hidden');
   $('batchTitle').textContent=`Batch ${n} — ${current.items.map(i=>i.name).join(', ')}`;
   $('promptText').value=current.prompt;
@@ -241,7 +242,7 @@ create policy "Admin updates products" on public.products for update to authenti
 using (auth.jwt()->>'email' = '${ADMIN}') with check (auth.jwt()->>'email' = '${ADMIN}');`;
   }
   setStatus(msg,failed?'err':'ok');
-  picks={};gridImage=null;$('gridFile').value='';
+  picks={};gridImage=null;$('gridFile').value='';$('multiFile').value='';$('trimWrap').classList.add('hidden');
   renderTiles();renderBatchButtons();
 }
 
@@ -252,8 +253,23 @@ $('copyPrompt').onclick=async()=>{
 };
 $('gridFile').onchange=async()=>{
   const f=$('gridFile').files[0];if(!f)return;
-  try{gridImage=await loadImageFile(f);Object.keys(picks).forEach(k=>{if(picks[k].source==='grid')delete picks[k]});rebuildGridPicks();renderTiles();$('status').classList.add('hidden')}
+  try{gridImage=await loadImageFile(f);picks={};rebuildGridPicks();$('trimWrap').classList.remove('hidden');renderTiles();$('status').classList.add('hidden')}
   catch(e){alert(e.message)}
+};
+// Alag alag images: download ke waqt (lastModified) ke order se products par lagao
+$('multiFile').onchange=async()=>{
+  const files=[...$('multiFile').files].sort((a,b)=>a.lastModified-b.lastModified||a.name.localeCompare(b.name,undefined,{numeric:true}));
+  if(!files.length)return;
+  gridImage=null;picks={};$('trimWrap').classList.add('hidden');
+  try{
+    for(const [i,f] of files.slice(0,current.items.length).entries()){
+      const img=await loadImageFile(f);
+      picks[current.items[i].id]={canvas:drawToCanvas(img,0,0,img.naturalWidth,img.naturalHeight),use:true,source:'single'};
+    }
+    renderTiles();
+    if(files.length!==current.items.length)setStatus(`Is batch mein ${current.items.length} products hain, aap ne ${files.length} images chuni hain. Pehli ${Math.min(files.length,current.items.length)} lagayi gayi hain — preview check karein.`,'err');
+    else setStatus('Images download ke order se lagayi gayi hain. Save se pehle har product ke saath image check kar lein.');
+  }catch(e){alert(e.message)}
 };
 $('trim').oninput=()=>{$('trimValue').textContent=$('trim').value+'%';rebuildGridPicks();renderTiles()};
 $('saveBtn').onclick=saveImages;
