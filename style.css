@@ -2190,6 +2190,7 @@ body {
 }
 
 .map-recenter-btn {
+    display: none !important;
     position: absolute;
     right: 10px;
     bottom: 112px;
@@ -2242,4 +2243,36 @@ body {
     .location-map {
         height: 260px;
     }
+}
+
+/* Pin lock / adjust mode */
+
+.location-map-box.is-editing {
+    outline: 3px solid #ff6500;
+    outline-offset: -3px;
+}
+
+.location-map-box.is-editing .map-recenter-btn {
+    display: flex !important;
+}
+
+.map-edit-btn {
+    position: absolute;
+    left: 10px;
+    bottom: 24px;
+    z-index: 1000;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 10px;
+    background: #ff6500;
+    color: #ffffff;
+    font-size: 13.5px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+}
+
+.location-map-box.is-editing .map-edit-btn {
+    background: #126b35;
 }
