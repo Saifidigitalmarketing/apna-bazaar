@@ -949,7 +949,6 @@ const GPS_MAX_WAIT_MS = 15000;
 
 let locationMap = null;
 let locationMapLayers = null;
-let locationAccuracyCircle = null;
 let reverseGeocodeTimer = null;
 
 let gpsLatitude = null;
@@ -1176,20 +1175,9 @@ function setMapAccuracyBadge(text) {
 }
 
 
-function removeAccuracyCircle() {
-
-    if (locationAccuracyCircle) {
-        locationAccuracyCircle.remove();
-        locationAccuracyCircle = null;
-    }
-}
-
-
 function onPinMoved(latitude, longitude) {
 
     setCustomerLocation(latitude, longitude);
-
-    removeAccuracyCircle();
 
     setMapAccuracyBadge("Pin set manually");
 
@@ -1236,9 +1224,6 @@ function setMapLayer(name) {
 
 function createLocationMap(latitude, longitude) {
 
-    const mapBox =
-        document.querySelector(".location-map-box");
-
     locationMapLayers = {
 
         satellite:
@@ -1276,18 +1261,8 @@ function createLocationMap(latitude, longitude) {
         .zoom({ position: "bottomright" })
         .addTo(locationMap);
 
-    locationMap.on("movestart", () => {
-
-        if (mapBox) {
-            mapBox.classList.add("is-moving");
-        }
-    });
-
+    // Pin map ke upar fixed hai — sirf map khiskta hai, pin nahi
     locationMap.on("moveend", () => {
-
-        if (mapBox) {
-            mapBox.classList.remove("is-moving");
-        }
 
         const center = locationMap.getCenter();
 
@@ -1360,22 +1335,7 @@ function showLocationMap(latitude, longitude, accuracy) {
         locationMap.setView([latitude, longitude], 18);
     }
 
-    removeAccuracyCircle();
-
     if (accuracy) {
-
-        locationAccuracyCircle =
-            L.circle(
-                [latitude, longitude],
-                {
-                    radius: accuracy,
-                    color: "#126b35",
-                    weight: 1,
-                    fillColor: "#126b35",
-                    fillOpacity: 0.12,
-                    interactive: false
-                }
-            ).addTo(locationMap);
 
         setMapAccuracyBadge(`GPS accuracy ±${Math.round(accuracy)} m`);
 
