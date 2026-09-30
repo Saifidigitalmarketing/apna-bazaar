@@ -1960,7 +1960,7 @@ async function displayDatabaseProducts() {
             "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80";
 
         card.innerHTML = `
-            <img src="${image}" alt="${item.product_name}">
+            <img src="${image}" alt="${item.product_name}" loading="lazy" decoding="async">
             <h3>${item.product_name}</h3>
             <p>${item.product_unit}</p>
             <strong>Rs. ${item.product_price}</strong>
@@ -2725,3 +2725,41 @@ function finishOrderSuccess() {
         behavior: "smooth"
     });
 }
+
+
+// =========================
+// BROKEN IMAGE FALLBACK
+// =========================
+
+// Kisi product ki image load na ho to toota icon ki jagah saaf default image
+
+const PRODUCT_IMAGE_FALLBACK =
+    "data:image/svg+xml;charset=UTF-8," +
+    encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">' +
+        '<rect width="400" height="300" fill="#eef7f1"/>' +
+        '<path d="M130 120h140l-16 80H146z" fill="none" stroke="#126b35" stroke-width="10" stroke-linejoin="round"/>' +
+        '<path d="M160 120l20-35M240 120l-20-35" stroke="#126b35" stroke-width="10" stroke-linecap="round"/>' +
+        '<text x="200" y="250" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#126b35">Apna Bazaar</text>' +
+        '</svg>'
+    );
+
+document.addEventListener(
+    "error",
+    (event) => {
+
+        const img = event.target;
+
+        if (
+            !(img instanceof HTMLImageElement) ||
+            img.dataset.fallbackApplied ||
+            !img.closest(".product, #cartItems, #moreProducts")
+        ) {
+            return;
+        }
+
+        img.dataset.fallbackApplied = "1";
+        img.src = PRODUCT_IMAGE_FALLBACK;
+    },
+    true
+);
