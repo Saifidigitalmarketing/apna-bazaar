@@ -21,7 +21,10 @@ to authenticated
 using (
     (auth.jwt() ->> 'email') = 'saifyounas112@gmail.com'
     or customer_user_id = auth.uid()
-    or assigned_rider_id = auth.uid()
+    or (
+        assigned_rider_id = auth.uid()
+        and coalesce(rider_status, '') <> 'Delivered'
+    )
     or (
         assigned_rider_id is null
         and coalesce(delivery_request_status, '') = 'waiting'
@@ -61,6 +64,23 @@ using (
         )
     )
 );
+
+-- A rider may still see completed-delivery counts and totals, but not customer
+-- phone, full address, or GPS coordinates after delivery.
+create or replace view public.rider_completed_orders
+with (security_barrier = true)
+as
+select
+    id, created_at, customer_area, distance_km, delivery_charge,
+    subtotal, grand_total, items, order_status, rider_status,
+    delivery_request_status, assigned_rider_id, assigned_at,
+    rider_status_updated_at
+from public.orders
+where assigned_rider_id = auth.uid()
+  and rider_status = 'Delivered';
+
+revoke all on public.rider_completed_orders from public, anon;
+grant select on public.rider_completed_orders to authenticated;
 
 -- 3) Customers may create orders only for their own authenticated account.
 drop policy if exists "Customers can create their own orders" on public.orders;
