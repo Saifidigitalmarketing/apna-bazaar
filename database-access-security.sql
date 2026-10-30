@@ -284,3 +284,47 @@ using (
     or (storage.foldername(name))[1] = auth.uid()::text
     or (auth.jwt() ->> 'email') = 'saifyounas112@gmail.com'
 );
+
+-- A permissive storage policy elsewhere must not allow a rider to overwrite
+-- or delete another rider's identity documents.
+drop policy if exists "Rider documents insert privacy guard" on storage.objects;
+create policy "Rider documents insert privacy guard"
+on storage.objects
+as restrictive
+for insert
+to authenticated
+with check (
+    bucket_id <> 'rider-documents'
+    or (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists "Rider documents update privacy guard" on storage.objects;
+create policy "Rider documents update privacy guard"
+on storage.objects
+as restrictive
+for update
+to authenticated
+using (
+    bucket_id <> 'rider-documents'
+    or (storage.foldername(name))[1] = auth.uid()::text
+    or (auth.jwt() ->> 'email') = 'saifyounas112@gmail.com'
+)
+with check (
+    bucket_id <> 'rider-documents'
+    or (storage.foldername(name))[1] = auth.uid()::text
+    or (auth.jwt() ->> 'email') = 'saifyounas112@gmail.com'
+);
+
+drop policy if exists "Rider documents delete privacy guard" on storage.objects;
+create policy "Rider documents delete privacy guard"
+on storage.objects
+as restrictive
+for delete
+to authenticated
+using (
+    bucket_id <> 'rider-documents'
+    or (storage.foldername(name))[1] = auth.uid()::text
+    or (auth.jwt() ->> 'email') = 'saifyounas112@gmail.com'
+);
+
+grant select, insert on storage.objects to authenticated;
