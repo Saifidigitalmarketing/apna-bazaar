@@ -35,7 +35,7 @@ async function docUrl(url){
   return url;
 }
 const fmtDate=v=>v?new Date(v).toLocaleString('en-PK',{dateStyle:'medium',timeStyle:'short'}):'-';
-async async function viewRider(id){
+async function viewRider(id){
   const r=allRiders.find(x=>x.id===id);if(!r)return;
   modalTitle.textContent='Rider Details';
   modalContent.innerHTML='<p>Documents load ho rahe hain...</p>';modal.classList.add('open');
