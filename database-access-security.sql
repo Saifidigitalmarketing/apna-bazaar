@@ -247,9 +247,9 @@ grant execute on function public.admin_set_rider_status(uuid, text) to authentic
 
 -- 6) Rider documents contain CNIC and identity data. Keep the bucket private,
 -- let riders upload only into their own folder, and let only the owner/admin read.
-update storage.buckets
-set public = false
-where id = 'rider-documents';
+insert into storage.buckets (id, name, public)
+values ('rider-documents', 'rider-documents', false)
+on conflict (id) do update set public = false;
 
 drop policy if exists "Riders upload own documents" on storage.objects;
 create policy "Riders upload own documents"
