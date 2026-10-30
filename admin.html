@@ -30,9 +30,10 @@ const RIDER_BUCKET='rider-documents';
 async function docUrl(url){
   if(!url)return null;
   const marker='/object/public/'+RIDER_BUCKET+'/',i=url.indexOf(marker);
-  if(i<0)return url;
-  try{const{data,error}=await db.storage.from(RIDER_BUCKET).createSignedUrl(decodeURIComponent(url.slice(i+marker.length).split('?')[0]),3600);if(!error&&data?.signedUrl)return data.signedUrl}catch(_){}
-  return url;
+  if(i<0&&/^https?:\\/\\//i.test(url))return url;
+  const path=i>=0?decodeURIComponent(url.slice(i+marker.length).split('?')[0]):url;
+  try{const{data,error}=await db.storage.from(RIDER_BUCKET).createSignedUrl(path,3600);if(!error&&data?.signedUrl)return data.signedUrl}catch(_){}
+  return null;
 }
 const fmtDate=v=>v?new Date(v).toLocaleString('en-PK',{dateStyle:'medium',timeStyle:'short'}):'-';
 async function viewRider(id){
