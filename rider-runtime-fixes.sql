@@ -7,6 +7,9 @@
 alter table public.orders
     add column if not exists delivery_request_status text;
 
+alter table public.orders
+    alter column delivery_request_status set default 'waiting';
+
 -- Make every new unassigned order visible to riders automatically.
 create or replace function public.set_new_order_delivery_request()
 returns trigger
