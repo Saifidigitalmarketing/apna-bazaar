@@ -244,8 +244,12 @@ $$;
 revoke all on function public.admin_set_rider_status(uuid, text) from public, anon;
 grant execute on function public.admin_set_rider_status(uuid, text) to authenticated;
 
--- 6) Rider documents: permit authenticated riders to upload only inside
--- their own user-id folder. Existing bucket visibility is not changed here.
+-- 6) Rider documents contain CNIC and identity data. Keep the bucket private,
+-- let riders upload only into their own folder, and let only the owner/admin read.
+update storage.buckets
+set public = false
+where id = 'rider-documents';
+
 drop policy if exists "Riders upload own documents" on storage.objects;
 create policy "Riders upload own documents"
 on storage.objects
@@ -254,4 +258,29 @@ to authenticated
 with check (
     bucket_id = 'rider-documents'
     and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists "Riders and admin read own documents" on storage.objects;
+create policy "Riders and admin read own documents"
+on storage.objects
+for select
+to authenticated
+using (
+    bucket_id = 'rider-documents'
+    and (
+        (storage.foldername(name))[1] = auth.uid()::text
+        or (auth.jwt() ->> 'email') = 'saifyounas112@gmail.com'
+    )
+);
+
+drop policy if exists "Rider documents privacy guard" on storage.objects;
+create policy "Rider documents privacy guard"
+on storage.objects
+as restrictive
+for select
+to authenticated
+using (
+    bucket_id <> 'rider-documents'
+    or (storage.foldername(name))[1] = auth.uid()::text
+    or (auth.jwt() ->> 'email') = 'saifyounas112@gmail.com'
 );
