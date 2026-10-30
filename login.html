@@ -332,7 +332,8 @@ async function signupUser() {
         "Account created successfully!";
 
     setTimeout(function () {
-        window.location.href = "index.html";
+        const resume = localStorage.getItem("returnAfterLogin") === "checkout";
+        window.location.href = resume ? "index.html?resumeCheckout=true" : "index.html";
     }, 1000);
 }
 
@@ -409,7 +410,7 @@ async function forgotPassword() {
     message.textContent = "Sending password reset email...";
 
     const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-       redirectTo: "https://eclectic-kleicha-7eb102.netlify.app/reset-password.html"
+       redirectTo: new URL("reset-password.html", window.location.href).href
     });
 
     if (error) {
