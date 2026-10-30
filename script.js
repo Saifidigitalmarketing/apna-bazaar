@@ -1555,14 +1555,14 @@ document.addEventListener(
                 .trim();
 
 
-        const area =
+        let area =
             document
                 .getElementById("customerArea")
                 .value
                 .trim();
 
 
-        const address =
+        let address =
             document
                 .getElementById("customerAddress")
                 .value
@@ -1573,17 +1573,8 @@ document.addEventListener(
         // CHECK CUSTOMER DETAILS
         // =========================
 
-        if (
-            !name ||
-            !phone ||
-            !area ||
-            !address
-        ) {
-
-            alert(
-                "Please complete all delivery details."
-            );
-
+        if (!name || !phone) {
+            alert("Please enter your name and phone number.");
             return;
         }
 
@@ -1596,13 +1587,16 @@ document.addEventListener(
             customerLatitude === null ||
             customerLongitude === null
         ) {
-
-            alert(
-                "Please use Current Location before continuing."
-            );
-
+            alert("Please use Current Location before continuing.");
             return;
         }
+
+        // Area/address reverse lookup can fail on some phones or networks.
+        // The exact GPS coordinates are enough for rider navigation.
+        area = area || "GPS Location";
+        address = address || `GPS location (${Number(customerLatitude).toFixed(6)}, ${Number(customerLongitude).toFixed(6)})`;
+        document.getElementById("customerArea").value = area;
+        document.getElementById("customerAddress").value = address;
 
 
         // Dobara fresh distance calculate
