@@ -27,6 +27,7 @@ using (
     )
     or (
         assigned_rider_id is null
+        and rider_status is null
         and coalesce(delivery_request_status, '') = 'waiting'
         and exists (
             select 1
