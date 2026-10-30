@@ -333,7 +333,7 @@ function setupCartButtons() {
 
 function updateMainProductQuantity(productName) {
 
-    products.forEach((product) => {
+    document.querySelectorAll(".product").forEach((product) => {
 
         const name =
             product.querySelector("h3")
@@ -361,7 +361,7 @@ function updateMainProductQuantity(productName) {
 
 function resetProductButton(productName) {
 
-    products.forEach((product) => {
+    document.querySelectorAll(".product").forEach((product) => {
 
         const name =
             product.querySelector("h3")
@@ -1872,6 +1872,7 @@ orderItems.forEach((item) => {
 });
 
 const orderData = {
+    customer_user_id: user.id,
     customer_name: name,
     customer_phone: phone,
     customer_area: area,
@@ -2355,6 +2356,12 @@ function closeOrderPanel() {
 
 async function loadCurrentOrder(openPanel = false) {
 
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) {
+        if (openPanel) alert("Please login to view your order.");
+        return false;
+    }
+
     const orderId =
         localStorage.getItem("currentOrderId");
 
@@ -2369,6 +2376,7 @@ async function loadCurrentOrder(openPanel = false) {
         .from("orders")
         .select("id, order_status, grand_total")
         .eq("id", orderId)
+        .eq("customer_user_id", user.id)
         .single();
 
     if (error || !data) {
@@ -2446,11 +2454,17 @@ if (latestStatusButton) {
 loadCurrentOrder(false);
 async function checkOrderNow() {
 
+    const { data: { user } } = await supabaseClient.auth.getUser();
     const orderId =
         document.getElementById("trackingOrderId").value.trim();
 
     const trackingResult =
         document.getElementById("trackingResult");
+
+    if (!user) {
+        trackingResult.textContent = "Please login to track your order.";
+        return;
+    }
 
     if (!orderId) {
         trackingResult.innerHTML =
@@ -2466,6 +2480,7 @@ async function checkOrderNow() {
             .from("orders")
             .select("id, order_status, grand_total")
             .eq("id", orderId)
+            .eq("customer_user_id", user.id)
             .single();
 
     if (error || !data) {
