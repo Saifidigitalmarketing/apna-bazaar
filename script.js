@@ -333,7 +333,7 @@ function setupCartButtons() {
 
 function updateMainProductQuantity(productName) {
 
-    products.forEach((product) => {
+    document.querySelectorAll(".product").forEach((product) => {
 
         const name =
             product.querySelector("h3")
@@ -361,7 +361,7 @@ function updateMainProductQuantity(productName) {
 
 function resetProductButton(productName) {
 
-    products.forEach((product) => {
+    document.querySelectorAll(".product").forEach((product) => {
 
         const name =
             product.querySelector("h3")
@@ -1555,14 +1555,14 @@ document.addEventListener(
                 .trim();
 
 
-        const area =
+        let area =
             document
                 .getElementById("customerArea")
                 .value
                 .trim();
 
 
-        const address =
+        let address =
             document
                 .getElementById("customerAddress")
                 .value
@@ -1573,17 +1573,8 @@ document.addEventListener(
         // CHECK CUSTOMER DETAILS
         // =========================
 
-        if (
-            !name ||
-            !phone ||
-            !area ||
-            !address
-        ) {
-
-            alert(
-                "Please complete all delivery details."
-            );
-
+        if (!name || !phone) {
+            alert("Please enter your name and phone number.");
             return;
         }
 
@@ -1596,13 +1587,16 @@ document.addEventListener(
             customerLatitude === null ||
             customerLongitude === null
         ) {
-
-            alert(
-                "Please use Current Location before continuing."
-            );
-
+            alert("Please use Current Location before continuing.");
             return;
         }
+
+        // Area/address reverse lookup can fail on some phones or networks.
+        // The exact GPS coordinates are enough for rider navigation.
+        area = area || "GPS Location";
+        address = address || `GPS location (${Number(customerLatitude).toFixed(6)}, ${Number(customerLongitude).toFixed(6)})`;
+        document.getElementById("customerArea").value = area;
+        document.getElementById("customerAddress").value = address;
 
 
         // Dobara fresh distance calculate
@@ -1872,6 +1866,7 @@ orderItems.forEach((item) => {
 });
 
 const orderData = {
+    customer_user_id: user.id,
     customer_name: name,
     customer_phone: phone,
     customer_area: area,
@@ -2355,6 +2350,12 @@ function closeOrderPanel() {
 
 async function loadCurrentOrder(openPanel = false) {
 
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) {
+        if (openPanel) alert("Please login to view your order.");
+        return false;
+    }
+
     const orderId =
         localStorage.getItem("currentOrderId");
 
@@ -2369,6 +2370,7 @@ async function loadCurrentOrder(openPanel = false) {
         .from("orders")
         .select("id, order_status, grand_total")
         .eq("id", orderId)
+        .eq("customer_user_id", user.id)
         .single();
 
     if (error || !data) {
@@ -2446,11 +2448,17 @@ if (latestStatusButton) {
 loadCurrentOrder(false);
 async function checkOrderNow() {
 
+    const { data: { user } } = await supabaseClient.auth.getUser();
     const orderId =
         document.getElementById("trackingOrderId").value.trim();
 
     const trackingResult =
         document.getElementById("trackingResult");
+
+    if (!user) {
+        trackingResult.textContent = "Please login to track your order.";
+        return;
+    }
 
     if (!orderId) {
         trackingResult.innerHTML =
@@ -2466,6 +2474,7 @@ async function checkOrderNow() {
             .from("orders")
             .select("id, order_status, grand_total")
             .eq("id", orderId)
+            .eq("customer_user_id", user.id)
             .single();
 
     if (error || !data) {
