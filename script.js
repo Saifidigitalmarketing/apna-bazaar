@@ -1979,22 +1979,35 @@ renderMoreProducts();
 // LOAD PRODUCTS FROM SUPABASE
 // ==========================
 
-async function loadProducts() {
-    const { data, error } = await supabaseClient
-        .from("products")
-        .select("*")
-        .eq("is_available", true)
-        .order("id", { ascending: true });
+function showProductListMessage(productList, message, isError = false) {
+    productList.innerHTML = "";
 
-    if (error) {
-        console.error("Error loading products:", error);
-        return;
+    const wrapper = document.createElement("div");
+    wrapper.className = "product-list-message";
+    wrapper.style.cssText = "grid-column:1 / -1;width:100%;padding:28px 16px;text-align:center;border-radius:12px;background:#f4f8f5;color:#315b40;";
+
+    const text = document.createElement("p");
+    text.textContent = message;
+    text.style.cssText = "margin:0 0 12px;font-weight:600;";
+
+    if (isError) {
+        wrapper.style.background = "#fff1f0";
+        wrapper.style.color = "#a4261d";
     }
 
-    console.log("Products from Supabase:", data);
-}
+    wrapper.appendChild(text);
 
-loadProducts();
+    if (isError) {
+        const retry = document.createElement("button");
+        retry.type = "button";
+        retry.textContent = "Try Again";
+        retry.style.cssText = "border:0;border-radius:8px;padding:10px 18px;background:#087a3e;color:#fff;font-weight:700;cursor:pointer;";
+        retry.addEventListener("click", displayDatabaseProducts);
+        wrapper.appendChild(retry);
+    }
+
+    productList.appendChild(wrapper);
+}
 
 // ==========================
 // DISPLAY SUPABASE PRODUCTS ON MAIN WEBSITE
@@ -2007,58 +2020,96 @@ async function displayDatabaseProducts() {
         return;
     }
 
-    const { data, error } = await supabaseClient
-        .from("products")
-        .select("*")
-        .eq("is_available", true)
-        .order("id", { ascending: true });
+    showProductListMessage(productList, "Products load ho rahe hain...");
 
-    if (error) {
-        console.error("Error displaying products:", error);
-        return;
-    }
+    try {
+        const { data, error } = await supabaseClient
+            .from("products")
+            .select("id, product_name, product_price, product_unit, product_category, product_image, is_available")
+            .eq("is_available", true)
+            .order("id", { ascending: true });
 
-    data.forEach((item) => {
+        if (error) {
+            throw error;
+        }
 
-        // Don't show duplicate products already present in HTML
-        const existingProducts =
-            productList.querySelectorAll(".product h3");
-
-        const alreadyExists = Array.from(existingProducts).some(
-            (title) =>
-                title.textContent.trim().toLowerCase() ===
-                item.product_name.trim().toLowerCase()
+        const rows = Array.isArray(data) ? data : [];
+        const availableProducts = rows.filter((item) =>
+            item && String(item.product_name ?? "").trim().length > 0
         );
 
-        if (alreadyExists) {
+        productList.innerHTML = "";
+
+        if (availableProducts.length === 0) {
+            showProductListMessage(
+                productList,
+                "Database se koi active product nahi mila. Admin panel mein products ka availability status (is_available) check karein."
+            );
+            console.warn("Apna Bazaar: Supabase query succeeded but returned no active products.");
             return;
         }
 
-        const card = document.createElement("div");
-        card.className = "product";
-        card.dataset.category = item.product_category || "";
+        availableProducts.forEach((item) => {
+            const productName = String(item.product_name).trim();
 
-        const image =
-            item.product_image ||
-            "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80";
+            const alreadyExists = Array.from(
+                productList.querySelectorAll(".product h3")
+            ).some((title) =>
+                title.textContent.trim().toLowerCase() === productName.toLowerCase()
+            );
 
-        card.innerHTML = `
-            <img src="${image}" alt="${item.product_name}" loading="lazy" decoding="async">
-            <h3>${item.product_name}</h3>
-            <p>${item.product_unit}</p>
-            <strong>Rs. ${item.product_price}</strong>
-            <button>Add to Cart</button>
-        `;
+            if (alreadyExists) {
+                return;
+            }
 
-        productList.appendChild(card);
+            const card = document.createElement("div");
+            card.className = "product";
+            card.dataset.category = String(item.product_category ?? "");
 
-        const button = card.querySelector("button");
+            const image = document.createElement("img");
+            image.src = String(item.product_image || "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80");
+            image.alt = productName;
+            image.loading = "lazy";
+            image.decoding = "async";
 
-        setupAddButton(
-            card,
-            button
+            const title = document.createElement("h3");
+            title.textContent = productName;
+
+            const unit = document.createElement("p");
+            unit.textContent = String(item.product_unit ?? "");
+
+            const price = document.createElement("strong");
+            price.textContent = "Rs. " + String(item.product_price ?? "0");
+
+            const button = document.createElement("button");
+            button.type = "button";
+            button.textContent = "Add to Cart";
+
+            card.append(image, title, unit, price, button);
+            productList.appendChild(card);
+            setupAddButton(card, button);
+        });
+
+        const renderedCount = productList.querySelectorAll(".product").length;
+
+        if (renderedCount === 0) {
+            showProductListMessage(
+                productList,
+                "Active products mile, lekin unka naam valid nahi tha. Admin panel mein product names check karein."
+            );
+            return;
+        }
+
+        console.info("Apna Bazaar: rendered products:", renderedCount);
+        renderMoreProducts();
+    } catch (error) {
+        console.error("Error displaying products from Supabase:", error);
+        showProductListMessage(
+            productList,
+            "Products load nahi ho sake. Database connection ya public read permission check karein. Dobara koshish karne ke liye Try Again dabayein.",
+            true
         );
-    });
+    }
 }
 
 displayDatabaseProducts();
